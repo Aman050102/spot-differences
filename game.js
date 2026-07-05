@@ -52,6 +52,13 @@ const devPanel = document.getElementById('dev-panel');
 const coordsLog = document.getElementById('coords-log');
 const clearDevBtn = document.getElementById('clear-dev-btn');
 
+// Initialize Developer Mode from URL query parameter
+const urlParams = new URLSearchParams(window.location.search);
+if (urlParams.get('dev') === 'true') {
+    devMode = true;
+    devPanel.classList.remove('hidden-panel');
+}
+
 // Screen Transition Helper
 function showScreen(screenId) {
     [startScreen, playingScreen, endScreen].forEach(s => s.classList.remove('active'));
