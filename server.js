@@ -2,7 +2,7 @@ const http = require('http');
 const fs = require('fs');
 const path = require('path');
 
-const PORT = 3000;
+const PORT = 3001;
 const DB_FILE = path.join(__dirname, 'custom_levels.json');
 
 // Ensure DB file exists
