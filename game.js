@@ -5,14 +5,29 @@ const levels = [
         title: "ด่านที่ 1: ยุทธหัตถี (ศึกช้างศึก)",
         originalSrc: "assets/original_1.png",
         gameSrc: "assets/game_1.png",
-        differences: []
+        differences: [
+            { "x": 59.3, "y": 19.6, "r": 4.5 },
+            { "x": 68.0, "y": 23.4, "r": 4.5 },
+            { "x": 81.6, "y": 22.5, "r": 4.5 },
+            { "x": 93.8, "y": 27.5, "r": 4.5 },
+            { "x": 47.8, "y": 65.9, "r": 4.5 },
+            { "x": 78.8, "y": 65.8, "r": 4.5 },
+            { "x": 71.3, "y": 74.9, "r": 4.5 }
+        ]
     },
     {
         id: 2,
         title: "ด่านที่ 2: วิถีชีวิตกลางแม่น้ำป่า",
         originalSrc: "assets/original_2.png",
         gameSrc: "assets/game_2.png",
-        differences: []
+        differences: [
+            { "x": 7.3, "y": 92.6, "r": 6.8 },
+            { "x": 8.3, "y": 78.2, "r": 6.5 },
+            { "x": 16.6, "y": 61.3, "r": 7.9 },
+            { "x": 39.3, "y": 40.4, "r": 7.2 },
+            { "x": 64.1, "y": 87.9, "r": 6.8 },
+            { "x": 68.1, "y": 74.1, "r": 4.5 }
+        ]
     }
 ];
 
@@ -26,6 +41,7 @@ let totalTimeRemaining = 0; // accumulated remaining time
 let foundDifferencesList = [];
 let devMode = false;
 let devCoords = [];
+let isTransitioning = false;
 
 // DOM Elements
 const startScreen = document.getElementById('start-screen');
@@ -83,6 +99,7 @@ function initGame() {
 
 // Start a specific level
 function startLevel(levelIdx) {
+    isTransitioning = false;
     currentLevelIdx = levelIdx;
     levelScore = 0;
     foundDifferencesList = [];
@@ -136,6 +153,7 @@ function updateTimerDisplay() {
 
 // Click and keypress handler
 function handleGameClick(e) {
+    if (isTransitioning) return;
     const rect = imgGame.getBoundingClientRect();
     if (!rect.width || !rect.height) {
         console.warn("Image dimensions are 0. Image might not be loaded yet.");
@@ -179,6 +197,7 @@ function handleGameClick(e) {
         
         if (levelScore >= currentLevel.differences.length) {
             clearInterval(timerInterval);
+            isTransitioning = true;
             setTimeout(() => nextLevelOrEnd(false), 800);
         }
     } else {
@@ -246,6 +265,7 @@ function endGame(completed) {
 }
 
 function nextLevelOrEnd(isSkipped = false) {
+    isTransitioning = false;
     clearInterval(timerInterval);
     if (!isSkipped) {
         totalTimeRemaining += timeRemaining;
@@ -284,6 +304,7 @@ function drawDevCircle(xPercent, yPercent) {
 // Event Listeners
 startBtn.addEventListener('click', () => startLevel(0));
 skipBtn.addEventListener('click', () => {
+    if (isTransitioning) return;
     nextLevelOrEnd(true); // pass true for isSkipped
 });
 restartBtn.addEventListener('click', initGame);
