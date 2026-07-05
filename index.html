@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>จับผิดภาพประวัติศาสตร์ - Spot the Difference</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&family=Sarabun:wght@300;400;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+    <div id="game-container">
+        <!-- Start Screen -->
+        <div id="start-screen" class="screen active">
+            <div class="glass-card text-center">
+                <h1 class="logo-text">SPOT THE DIFFERENCE</h1>
+                <p class="subtitle-text">เกมจับผิดภาพสุดท้าทาย ค้นหาจุดต่างก่อนเวลาจะหมด!</p>
+                
+                <div class="rules-container">
+                    <div class="rule-item">⏱️ มีเวลาด่านละ 3 นาที (180 วินาที)</div>
+                    <div class="rule-item">🎯 ค้นหาจุดที่หายไปจากภาพขวา</div>
+                    <div class="rule-item">❌ คลิกผิดไม่หักเวลา ค่อยๆ ค้นหาได้</div>
+                </div>
+
+                <button id="start-btn" class="btn btn-primary">เริ่มเล่นเกม</button>
+            </div>
+        </div>
+
+        <!-- Game Playing Screen -->
+        <div id="playing-screen" class="screen">
+            <div class="game-header">
+                <div class="level-info">
+                    <h2 id="level-title">ด่านที่ 1: ยุทธหัตถี</h2>
+                    <div class="score-badge">พบจุดต่าง: <span id="found-count">0</span> / <span id="total-count">8</span></div>
+                </div>
+                <div class="timer-container">
+                    <span class="timer-icon">⏱️</span>
+                    <span id="timer-display">03:00</span>
+                </div>
+            </div>
+
+            <div class="workspace">
+                <!-- Left Image: Reference Original -->
+                <div class="image-wrapper">
+                    <div class="image-label">ภาพต้นฉบับ</div>
+                    <img id="img-original" src="assets/original_1.png" alt="Original Image">
+                </div>
+
+                <!-- Right Image: Interactive Spotting -->
+                <div class="image-wrapper interactive" id="interactive-wrapper">
+                    <div class="image-label spotlight">จับผิดจุดต่าง (คลิกที่นี่)</div>
+                    <img id="img-game" src="assets/game_1.png" alt="Game Image">
+                    <!-- Correct circles will be dynamically injected here -->
+                    <div id="circles-layer" class="overlay-layer"></div>
+                    <!-- Incorrect click indicator will be injected here -->
+                    <div id="feedback-layer" class="overlay-layer"></div>
+                </div>
+            </div>
+
+            <div class="game-footer">
+                <span class="tip-text">💡 คำแนะนำ: มองหาจุดที่ลบเนื้อหาหายไปในรูปขวาแล้วคลิกได้เลย!</span>
+                <button id="skip-btn" class="btn btn-secondary">ข้ามด่าน</button>
+            </div>
+        </div>
+
+        <!-- End Screen -->
+        <div id="end-screen" class="screen">
+            <div class="glass-card text-center">
+                <div class="trophy-icon">🏆</div>
+                <h1 id="end-title" class="status-text">ยินดีด้วย! คุณจบเกมแล้ว</h1>
+                <p class="subtitle-text">สรุปผลคะแนนและสถิติของคุณ</p>
+
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <span class="stat-label">พบจุดต่างทั้งหมด</span>
+                        <span id="final-score" class="stat-value">14 / 14</span>
+                    </div>
+                    <div class="stat-card">
+                        <span class="stat-label">เวลาที่เหลือสะสม</span>
+                        <span id="final-time" class="stat-value">02:30</span>
+                    </div>
+                </div>
+
+                <button id="restart-btn" class="btn btn-primary">เล่นใหม่อีกครั้ง</button>
+            </div>
+        </div>
+
+        <!-- Dev Coordinates Overlay Dashboard -->
+        <div id="dev-panel" class="hidden-panel">
+            <h3>Developer coordinates tool (กด 'D' เพื่อซ่อน/แสดง)</h3>
+            <p>คลิกบนภาพขวาเพื่อรับพิกัดเป้าหมาย:</p>
+            <textarea id="coords-log" readonly placeholder="คลิกเพื่อสร้างพิกัด..."></textarea>
+            <button id="clear-dev-btn" class="btn btn-mini">ล้างข้อมูล</button>
+        </div>
+    </div>
+
+    <script src="game.js"></script>
+</body>
+</html>
