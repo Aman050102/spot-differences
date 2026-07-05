@@ -179,7 +179,7 @@ function handleGameClick(e) {
         
         if (levelScore >= currentLevel.differences.length) {
             clearInterval(timerInterval);
-            setTimeout(nextLevelOrEnd, 800);
+            setTimeout(() => nextLevelOrEnd(false), 800);
         }
     } else {
         drawMissIndicator(percentX, percentY);
@@ -245,9 +245,11 @@ function endGame(completed) {
     showScreen('end-screen');
 }
 
-function nextLevelOrEnd() {
+function nextLevelOrEnd(isSkipped = false) {
     clearInterval(timerInterval);
-    totalTimeRemaining += timeRemaining;
+    if (!isSkipped) {
+        totalTimeRemaining += timeRemaining;
+    }
     if (currentLevelIdx + 1 < levels.length) {
         startLevel(currentLevelIdx + 1);
     } else {
@@ -281,7 +283,9 @@ function drawDevCircle(xPercent, yPercent) {
 
 // Event Listeners
 startBtn.addEventListener('click', () => startLevel(0));
-skipBtn.addEventListener('click', nextLevelOrEnd);
+skipBtn.addEventListener('click', () => {
+    nextLevelOrEnd(true); // pass true for isSkipped
+});
 restartBtn.addEventListener('click', initGame);
 interactiveWrapper.addEventListener('click', handleGameClick);
 
