@@ -338,7 +338,6 @@ function handleGameClick(e) {
     } else {
         drawMissIndicator(percentX, percentY);
         triggerShakeEffect();
-        showHintCircles();
     }
 }
 
