@@ -898,6 +898,19 @@
         }
 
         function loadLevelsFromDB(db) {
+            if (window.location.protocol.startsWith('http')) {
+                return fetch('/api/levels')
+                    .then(res => res.json())
+                    .catch(err => {
+                        console.warn('API error, falling back to IndexedDB:', err);
+                        return loadLevelsFromIndexedDB(db);
+                    });
+            } else {
+                return loadLevelsFromIndexedDB(db);
+            }
+        }
+
+        function loadLevelsFromIndexedDB(db) {
             return new Promise((resolve, reject) => {
                 const transaction = db.transaction(['levelsStore'], 'readonly');
                 const store = transaction.objectStore('levelsStore');
@@ -921,7 +934,7 @@
         }
 
         function saveLevelsToDB(db, levels) {
-            return new Promise((resolve, reject) => {
+            const saveToLocalDB = new Promise((resolve, reject) => {
                 const transaction = db.transaction(['levelsStore'], 'readwrite');
                 const store = transaction.objectStore('levelsStore');
                 const request = store.put(levels, STORAGE_KEY);
@@ -933,6 +946,22 @@
                     localStorage.setItem('spotDiff_indexeddb_meta', JSON.stringify(meta));
                 } catch (e) { }
             });
+
+            if (window.location.protocol.startsWith('http')) {
+                return fetch('/api/levels', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(levels)
+                })
+                .then(res => res.json())
+                .then(() => saveToLocalDB)
+                .catch(err => {
+                    console.warn('Failed to save to server API, saved locally instead:', err);
+                    return saveToLocalDB;
+                });
+            } else {
+                return saveToLocalDB;
+            }
         }
 
         // ==========================================
@@ -958,12 +987,25 @@
             </div>
         </div>
     `).join('');
-        }
+}
 
         async function deleteLevel(id) {
             if (!confirm('ต้องการลบด่านนี้ออกจากเกมใช่ไหมครับ?')) return;
             const db = await initDB();
-            const currentLevels = await loadLevelsFromDB(db);
+            
+            if (window.location.protocol.startsWith('http')) {
+                try {
+                    await fetch('/api/levels/delete', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ id })
+                    });
+                } catch(e) {
+                    console.warn('Failed to delete on server:', e);
+                }
+            }
+
+            const currentLevels = await loadLevelsFromIndexedDB(db);
             const filtered = currentLevels.filter(l => l.id !== id);
             await saveLevelsToDB(db, filtered);
             renderLevelList();

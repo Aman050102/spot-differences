@@ -35,8 +35,39 @@ const levels = [
 
 const STORAGE_KEY = 'spotDiff_customLevels';
 
-// ปรับปรุงกลไกการโหลดด่านสร้างเองจาก IndexedDB (แทนที่ IIFE localStorage เดิม)
+// ปรับปรุงกลไกการโหลดด่านสร้างเองจาก HTTP API หรือ IndexedDB
 function mergeCustomLevels() {
+    return new Promise((resolve) => {
+        if (window.location.protocol.startsWith('http')) {
+            fetch('/api/levels')
+                .then(res => res.json())
+                .then(custom => {
+                    custom.forEach((lv) => {
+                        if (!levels.some(existing => existing.id === lv.id)) {
+                            levels.push({
+                                id: lv.id,
+                                title: lv.title,
+                                originalSrc: lv.originalSrc,
+                                gameSrc: lv.gameSrc,
+                                answerSrc: lv.answerSrc || lv.gameSrc,
+                                differences: lv.differences,
+                                isCustom: true
+                            });
+                        }
+                    });
+                    resolve();
+                })
+                .catch(err => {
+                    console.warn('API error, falling back to IndexedDB:', err);
+                    loadLevelsFromIndexedDB().then(resolve);
+                });
+        } else {
+            loadLevelsFromIndexedDB().then(resolve);
+        }
+    });
+}
+
+function loadLevelsFromIndexedDB() {
     return new Promise((resolve) => {
         const request = indexedDB.open('SpotDiffDB', 1);
 
@@ -56,7 +87,6 @@ function mergeCustomLevels() {
             getRequest.onsuccess = (event) => {
                 const custom = event.target.result || [];
                 custom.forEach((lv) => {
-                    // ตรวจสอบว่ายังไม่มีด่าน id นี้ในระบบเพื่อป้องกันการ push ซ้ำ
                     if (!levels.some(existing => existing.id === lv.id)) {
                         levels.push({
                             id: lv.id,

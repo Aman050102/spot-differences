@@ -1,0 +1,17 @@
+{
+  "name": "spot-the-difference",
+  "version": "2.1.0",
+  "description": "Spot the Difference web game with custom level editor and persistent JSON file database",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node server.js"
+  },
+  "keywords": [
+    "spot-the-difference",
+    "game",
+    "level-editor"
+  ],
+  "author": "",
+  "license": "ISC"
+}
