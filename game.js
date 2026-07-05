@@ -1,0 +1,310 @@
+// Game levels configuration
+const levels = [
+    {
+        id: 1,
+        title: "ด่านที่ 1: ยุทธหัตถี (ศึกช้างศึก)",
+        originalSrc: "assets/original_1.png",
+        gameSrc: "assets/game_1.png",
+        differences: []
+    },
+    {
+        id: 2,
+        title: "ด่านที่ 2: วิถีชีวิตกลางแม่น้ำป่า",
+        originalSrc: "assets/original_2.png",
+        gameSrc: "assets/game_2.png",
+        differences: []
+    }
+];
+
+// Game state
+let currentLevelIdx = 0;
+let score = 0;
+let levelScore = 0;
+let timerInterval = null;
+let timeRemaining = 180; // 3 minutes per level
+let totalTimeRemaining = 0; // accumulated remaining time
+let foundDifferencesList = [];
+let devMode = false;
+let devCoords = [];
+
+// DOM Elements
+const startScreen = document.getElementById('start-screen');
+const playingScreen = document.getElementById('playing-screen');
+const endScreen = document.getElementById('end-screen');
+
+const startBtn = document.getElementById('start-btn');
+const skipBtn = document.getElementById('skip-btn');
+const restartBtn = document.getElementById('restart-btn');
+
+const levelTitle = document.getElementById('level-title');
+const foundCountEl = document.getElementById('found-count');
+const totalCountEl = document.getElementById('total-count');
+const timerDisplay = document.getElementById('timer-display');
+
+const imgOriginal = document.getElementById('img-original');
+const imgGame = document.getElementById('img-game');
+const interactiveWrapper = document.getElementById('interactive-wrapper');
+const circlesLayer = document.getElementById('circles-layer');
+const feedbackLayer = document.getElementById('feedback-layer');
+
+// Dev panel elements
+const devPanel = document.getElementById('dev-panel');
+const coordsLog = document.getElementById('coords-log');
+const clearDevBtn = document.getElementById('clear-dev-btn');
+
+// Screen Transition Helper
+function showScreen(screenId) {
+    [startScreen, playingScreen, endScreen].forEach(s => s.classList.remove('active'));
+    document.getElementById(screenId).classList.add('active');
+}
+
+// Reset and show start screen
+function initGame() {
+    currentLevelIdx = 0;
+    score = 0;
+    totalTimeRemaining = 0;
+    if (timerInterval) clearInterval(timerInterval);
+    showScreen('start-screen');
+}
+
+// Start a specific level
+function startLevel(levelIdx) {
+    currentLevelIdx = levelIdx;
+    levelScore = 0;
+    foundDifferencesList = [];
+    timeRemaining = 180;
+    
+    const level = levels[currentLevelIdx];
+    levelTitle.textContent = level.title;
+    foundCountEl.textContent = "0";
+    totalCountEl.textContent = level.differences.length.toString();
+    
+    imgOriginal.src = level.originalSrc;
+    imgGame.src = level.gameSrc;
+    imgOriginal.alt = `ภาพถ่ายต้นฉบับสำหรับ${level.title}`;
+    imgGame.alt = `ภาพจับผิดจุดต่างสำหรับ${level.title}`;
+    
+    circlesLayer.innerHTML = '';
+    feedbackLayer.innerHTML = '';
+    
+    updateTimerDisplay();
+    
+    if (timerInterval) clearInterval(timerInterval);
+    timerInterval = setInterval(updateTimer, 1000);
+    
+    showScreen('playing-screen');
+}
+
+// Timer Tick function
+function updateTimer() {
+    timeRemaining--;
+    updateTimerDisplay();
+    
+    if (timeRemaining <= 0) {
+        clearInterval(timerInterval);
+        endGame(false);
+    }
+}
+
+// Update countdown display
+function updateTimerDisplay() {
+    const minutes = Math.floor(timeRemaining / 60);
+    const seconds = timeRemaining % 60;
+    timerDisplay.textContent = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+    
+    const timerContainer = document.querySelector('.timer-container');
+    if (timeRemaining <= 30) {
+        timerContainer.classList.add('warning');
+    } else {
+        timerContainer.classList.remove('warning');
+    }
+}
+
+// Click and keypress handler
+function handleGameClick(e) {
+    const rect = imgGame.getBoundingClientRect();
+    const clickX = e.clientX - rect.left;
+    const clickY = e.clientY - rect.top;
+    
+    const percentX = (clickX / rect.width) * 100;
+    const percentY = (clickY / rect.height) * 100;
+    
+    if (devMode) {
+        logDevCoordinate(percentX, percentY);
+        drawDevCircle(percentX, percentY);
+        return;
+    }
+    
+    const currentLevel = levels[currentLevelIdx];
+    let matchedIdx = -1;
+    
+    for (let i = 0; i < currentLevel.differences.length; i++) {
+        if (foundDifferencesList.includes(i)) continue;
+        
+        const diff = currentLevel.differences[i];
+        const distance = Math.sqrt(Math.pow(percentX - diff.x, 2) + Math.pow(percentY - diff.y, 2));
+        
+        if (distance <= diff.r) {
+            matchedIdx = i;
+            break;
+        }
+    }
+    
+    if (matchedIdx !== -1) {
+        foundDifferencesList.push(matchedIdx);
+        levelScore++;
+        score++;
+        foundCountEl.textContent = levelScore.toString();
+        
+        const diff = currentLevel.differences[matchedIdx];
+        drawPersistentCircle(diff.x, diff.y, diff.r);
+        
+        if (levelScore >= currentLevel.differences.length) {
+            clearInterval(timerInterval);
+            totalTimeRemaining += timeRemaining;
+            setTimeout(() => {
+                if (currentLevelIdx + 1 < levels.length) {
+                    startLevel(currentLevelIdx + 1);
+                } else {
+                    endGame(true);
+                }
+            }, 800);
+        }
+    } else {
+        drawMissIndicator(percentX, percentY);
+        triggerShakeEffect();
+    }
+}
+
+// Draw red difference circle using percentages
+function drawPersistentCircle(xPercent, yPercent, rPercent) {
+    const circle = document.createElement('div');
+    circle.className = 'diff-circle';
+    circle.style.left = `${xPercent}%`;
+    circle.style.top = `${yPercent}%`;
+    circle.style.width = `${rPercent * 2}%`;
+    circle.style.height = `${rPercent * 2}%`;
+    circlesLayer.appendChild(circle);
+}
+
+// Draw temporary red 'X' miss indicator
+function drawMissIndicator(xPercent, yPercent) {
+    const indicator = document.createElement('div');
+    indicator.className = 'miss-indicator';
+    indicator.style.left = `${xPercent}%`;
+    indicator.style.top = `${yPercent}%`;
+    feedbackLayer.appendChild(indicator);
+    
+    setTimeout(() => {
+        indicator.remove();
+    }, 800);
+}
+
+// Shake container on incorrect click
+function triggerShakeEffect() {
+    interactiveWrapper.classList.add('shake-effect');
+    setTimeout(() => {
+        interactiveWrapper.classList.remove('shake-effect');
+    }, 400);
+}
+
+// End Game logic
+function endGame(completed) {
+    if (timerInterval) clearInterval(timerInterval);
+    
+    const finalScoreEl = document.getElementById('final-score');
+    const finalTimeEl = document.getElementById('final-time');
+    const endTitleEl = document.getElementById('end-title');
+    
+    const totalDifferences = levels.reduce((acc, lvl) => acc + lvl.differences.length, 0);
+    finalScoreEl.textContent = `${score} / ${totalDifferences}`;
+    
+    const min = Math.floor(totalTimeRemaining / 60);
+    const sec = totalTimeRemaining % 60;
+    finalTimeEl.textContent = `${min.toString().padStart(2, '0')}:${sec.toString().padStart(2, '0')}`;
+    
+    if (completed) {
+        endTitleEl.textContent = "🏆 ชนะเกม! ยินดีด้วย";
+        endTitleEl.style.color = "var(--success-color)";
+    } else {
+        endTitleEl.textContent = "⏰ หมดเวลา! เสียใจด้วย";
+        endTitleEl.style.color = "var(--danger-color)";
+    }
+    
+    showScreen('end-screen');
+}
+
+// Dev Mode helpers
+function logDevCoordinate(x, y) {
+    const coord = {
+        x: parseFloat(x.toFixed(1)),
+        y: parseFloat(y.toFixed(1)),
+        r: 4.5
+    };
+    devCoords.push(coord);
+    coordsLog.value = JSON.stringify(devCoords, null, 2);
+}
+
+function drawDevCircle(xPercent, yPercent) {
+    const circle = document.createElement('div');
+    circle.className = 'diff-circle';
+    circle.style.border = '3px solid #ec4899';
+    circle.style.background = 'rgba(236, 72, 153, 0.15)';
+    circle.style.boxShadow = '0 0 12px rgba(236, 72, 153, 0.5), inset 0 0 10px rgba(236, 72, 153, 0.5)';
+    circle.style.left = `${xPercent}%`;
+    circle.style.top = `${yPercent}%`;
+    circle.style.width = '9%';
+    circle.style.height = '9%';
+    circlesLayer.appendChild(circle);
+}
+
+// Event Listeners
+startBtn.addEventListener('click', () => startLevel(0));
+skipBtn.addEventListener('click', () => {
+    clearInterval(timerInterval);
+    if (currentLevelIdx + 1 < levels.length) {
+        startLevel(currentLevelIdx + 1);
+    } else {
+        endGame(true);
+    }
+});
+restartBtn.addEventListener('click', initGame);
+interactiveWrapper.addEventListener('click', handleGameClick);
+
+// Keyboard Accessibility for Enter/Space on wrapper
+interactiveWrapper.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter' || e.key === ' ') {
+        e.preventDefault();
+        const rect = imgGame.getBoundingClientRect();
+        const clientX = rect.left + rect.width / 2;
+        const clientY = rect.top + rect.height / 2;
+        
+        handleGameClick({
+            clientX: clientX,
+            clientY: clientY,
+            preventDefault: () => {}
+        });
+    }
+});
+
+// Toggle Dev Mode with keyboard key 'd'
+window.addEventListener('keydown', (e) => {
+    if (e.key.toLowerCase() === 'd') {
+        devMode = !devMode;
+        if (devMode) {
+            devPanel.classList.add('visible');
+        } else {
+            devPanel.classList.remove('visible');
+        }
+    }
+});
+
+// Clear coordinates log
+clearDevBtn.addEventListener('click', () => {
+    devCoords = [];
+    coordsLog.value = '';
+    circlesLayer.innerHTML = '';
+});
+
+// Initialize on page load
+initGame();
