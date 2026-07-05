@@ -615,8 +615,10 @@
 
     <script>
         // ==========================================
-        // STATE
+        // GLOBAL CONFIG & STATE (ประกาศไว้บนสุดของ Script Scope)
         // ==========================================
+        const STORAGE_KEY = 'spotDiff_customLevels';
+
         let originalBase64 = null;
         let gameBase64 = null;
         let answerBase64 = null;
@@ -879,7 +881,7 @@
         }
 
         // ==========================================
-        // INDEXEDDB ENGINE (แก้ปัญหาพื้นที่เต็มถาวร)
+        // INDEXEDDB ENGINE
         // ==========================================
         function initDB() {
             return new Promise((resolve, reject) => {
@@ -902,13 +904,11 @@
                 const request = store.get(STORAGE_KEY);
                 request.onsuccess = e => {
                     let data = e.target.result;
-                    // ดึงข้อมูลเก่าจาก localStorage มาใส่ IndexedDB หากมี (Backward Compatibility)
                     if (!data) {
                         try {
                             const legacyData = localStorage.getItem(STORAGE_KEY);
                             if (legacyData) {
                                 data = JSON.parse(legacyData);
-                                // ย้ายลงคลังใหม่แล้วลบคลังเก่า
                                 saveLevelsToDB(db, data);
                                 localStorage.removeItem(STORAGE_KEY);
                             }
@@ -928,7 +928,6 @@
                 request.onsuccess = () => resolve();
                 request.onerror = e => reject(e.target.error);
 
-                // อัปเดตข้อมูลลง localStorage แบบย่อ (เก็บเฉพาะไอดีและชื่อ) เพื่อให้เมธอดตรวจเช็คหน้าหลักยังรู้ว่ามีด่านอยู่
                 try {
                     const meta = levels.map(l => ({ id: l.id, isCustom: true }));
                     localStorage.setItem('spotDiff_indexeddb_meta', JSON.stringify(meta));

@@ -33,25 +33,57 @@ const levels = [
     }
 ];
 
-// Merge custom levels created in editor.html
-(function mergeCustomLevels() {
-    try {
-        const raw = localStorage.getItem('spotDiff_customLevels');
-        if (!raw) return;
-        const custom = JSON.parse(raw);
-        custom.forEach((lv, i) => {
-            levels.push({
-                id: lv.id,
-                title: lv.title,
-                originalSrc: lv.originalSrc,
-                gameSrc: lv.gameSrc,
-                answerSrc: lv.answerSrc || lv.gameSrc, // fallback: show game image as answer
-                differences: lv.differences,
-                isCustom: true
-            });
-        });
-    } catch(e) { console.warn('Could not load custom levels:', e); }
-})();
+const STORAGE_KEY = 'spotDiff_customLevels';
+
+// ปรับปรุงกลไกการโหลดด่านสร้างเองจาก IndexedDB (แทนที่ IIFE localStorage เดิม)
+function mergeCustomLevels() {
+    return new Promise((resolve) => {
+        const request = indexedDB.open('SpotDiffDB', 1);
+
+        request.onupgradeneeded = (e) => {
+            const db = e.target.result;
+            if (!db.objectStoreNames.contains('levelsStore')) {
+                db.createObjectStore('levelsStore');
+            }
+        };
+
+        request.onsuccess = (e) => {
+            const db = e.target.result;
+            const transaction = db.transaction(['levelsStore'], 'readonly');
+            const store = transaction.objectStore('levelsStore');
+            const getRequest = store.get(STORAGE_KEY);
+
+            getRequest.onsuccess = (event) => {
+                const custom = event.target.result || [];
+                custom.forEach((lv) => {
+                    // ตรวจสอบว่ายังไม่มีด่าน id นี้ในระบบเพื่อป้องกันการ push ซ้ำ
+                    if (!levels.some(existing => existing.id === lv.id)) {
+                        levels.push({
+                            id: lv.id,
+                            title: lv.title,
+                            originalSrc: lv.originalSrc,
+                            gameSrc: lv.gameSrc,
+                            answerSrc: lv.answerSrc || lv.gameSrc,
+                            differences: lv.differences,
+                            isCustom: true
+                        });
+                    }
+                });
+                resolve();
+            };
+
+            getRequest.onerror = () => {
+                console.warn('Could not read custom levels from IndexedDB store');
+                resolve();
+            };
+        };
+
+        request.onerror = () => {
+            console.warn('Could not open IndexedDB SpotDiffDB');
+            resolve();
+        };
+    });
+}
 
 // Game state
 let currentLevelIdx = 0;
@@ -229,12 +261,30 @@ function revealAnswerState(isSkipped = false) {
     skipBtn.classList.add('reveal-continue-btn');
 }
 
+function renderStartScreenPreviews() {
+    const previewsContainer = document.getElementById('level-previews');
+    if (!previewsContainer) return;
+    
+    previewsContainer.innerHTML = levels.map((lv, idx) => {
+        const isCustom = lv.isCustom ? '<span class="lvl-custom-badge">ด่านที่สร้างเอง</span>' : '';
+        return `
+            <div class="lvl-preview-card" style="cursor: default;">
+                <div class="lvl-number">ด่านที่ ${idx + 1}</div>
+                <div class="lvl-name">${lv.title || `ด่านที่ ${idx + 1}`}</div>
+                <span class="lvl-badge">${lv.differences.length} จุดต่าง</span>
+                ${isCustom}
+            </div>
+        `;
+    }).join('');
+}
+
 // Reset and show start screen
 function initGame() {
     currentLevelIdx = 0;
     score = 0;
     totalTimeRemaining = 0;
     if (timerInterval) clearInterval(timerInterval);
+    renderStartScreenPreviews();
     showScreen('start-screen');
 }
 
@@ -255,25 +305,25 @@ function startLevel(levelIdx) {
     // Stop any celebration from previous level
     stopVictoryEffects();
 
-    
+
     const level = levels[currentLevelIdx];
     levelTitle.textContent = level.title;
     foundCountEl.textContent = "0";
     totalCountEl.textContent = level.differences.length.toString();
-    
+
     imgOriginal.src = level.originalSrc;
     imgGame.src = level.gameSrc;
     imgOriginal.alt = `ภาพถ่ายต้นฉบับสำหรับ${level.title}`;
     imgGame.alt = `ภาพจับผิดจุดต่างสำหรับ${level.title}`;
-    
+
     circlesLayer.innerHTML = '';
     feedbackLayer.innerHTML = '';
-    
+
     updateTimerDisplay();
-    
+
     if (timerInterval) clearInterval(timerInterval);
     timerInterval = setInterval(updateTimer, 1000);
-    
+
     showScreen('playing-screen');
 }
 
@@ -294,7 +344,7 @@ function updateTimerDisplay() {
     const minutes = Math.floor(timeRemaining / 60);
     const seconds = timeRemaining % 60;
     timerDisplay.textContent = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
-    
+
     const timerContainer = document.querySelector('.timer-container');
     if (timeRemaining <= 30) {
         timerContainer.classList.add('warning');
@@ -314,40 +364,40 @@ function handleGameClick(e) {
     }
     const clickX = e.clientX - rect.left;
     const clickY = e.clientY - rect.top;
-    
+
     const percentX = (clickX / rect.width) * 100;
     const percentY = (clickY / rect.height) * 100;
-    
+
     if (devMode) {
         logDevCoordinate(percentX, percentY);
         drawDevCircle(percentX, percentY);
         return;
     }
-    
+
     const currentLevel = levels[currentLevelIdx];
     let matchedIdx = -1;
-    
+
     for (let i = 0; i < currentLevel.differences.length; i++) {
         if (foundDifferencesList.includes(i)) continue;
-        
+
         const diff = currentLevel.differences[i];
         const distance = Math.sqrt(Math.pow(percentX - diff.x, 2) + Math.pow(percentY - diff.y, 2));
-        
+
         if (distance <= diff.r) {
             matchedIdx = i;
             break;
         }
     }
-    
+
     if (matchedIdx !== -1) {
         foundDifferencesList.push(matchedIdx);
         levelScore++;
         score++;
         foundCountEl.textContent = levelScore.toString();
-        
+
         const diff = currentLevel.differences[matchedIdx];
         drawPersistentCircle(diff.x, diff.y, diff.r);
-        
+
         if (levelScore >= currentLevel.differences.length) {
             isTransitioning = true;
             setTimeout(() => {
@@ -379,7 +429,7 @@ function drawMissIndicator(xPercent, yPercent) {
     indicator.style.left = `${xPercent}%`;
     indicator.style.top = `${yPercent}%`;
     feedbackLayer.appendChild(indicator);
-    
+
     setTimeout(() => {
         indicator.remove();
     }, 800);
@@ -417,26 +467,26 @@ function showHintCircles() {
 // End Game logic
 function endGame(completed) {
     if (timerInterval) clearInterval(timerInterval);
-    
+
     const finalScoreEl = document.getElementById('final-score');
     const finalTimeEl = document.getElementById('final-time');
     const endTitleEl = document.getElementById('end-title');
-    
+
     const totalDifferences = levels.reduce((acc, lvl) => acc + lvl.differences.length, 0);
     finalScoreEl.textContent = `${score} / ${totalDifferences}`;
-    
+
     const min = Math.floor(totalTimeRemaining / 60);
     const sec = totalTimeRemaining % 60;
     finalTimeEl.textContent = `${min.toString().padStart(2, '0')}:${sec.toString().padStart(2, '0')}`;
-    
+
     if (completed) {
         endTitleEl.textContent = "🏆 ชนะเกม! ยินดีด้วย";
         endTitleEl.style.color = "var(--success-color)";
     } else {
-        endTitleEl.textContent = "⏰ หมดเวลา! เสียใจด้วย";
+        endTitleEl.textContent = "⏰ หมดเวลา! เสใจด้วย";
         endTitleEl.style.color = "var(--danger-color)";
     }
-    
+
     showScreen('end-screen');
 }
 
@@ -506,7 +556,7 @@ interactiveWrapper.addEventListener('keydown', (e) => {
         const rect = imgGame.getBoundingClientRect();
         const clientX = rect.left + rect.width / 2;
         const clientY = rect.top + rect.height / 2;
-        
+
         handleGameClick({
             clientX: clientX,
             clientY: clientY,
@@ -534,5 +584,10 @@ clearDevBtn.addEventListener('click', () => {
     document.querySelectorAll('.dev-circle').forEach(el => el.remove());
 });
 
-// Initialize on page load
-initGame();
+// Initialize game on page load by merging async IndexedDB data first
+async function bootGame() {
+    await mergeCustomLevels();
+    initGame();
+}
+
+bootGame();
