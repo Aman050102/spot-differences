@@ -47,6 +47,13 @@ const interactiveWrapper = document.getElementById('interactive-wrapper');
 const circlesLayer = document.getElementById('circles-layer');
 const feedbackLayer = document.getElementById('feedback-layer');
 
+imgOriginal.onerror = () => {
+    alert("ไม่สามารถโหลดภาพต้นฉบับได้ กรุณาลองรีโหลดหน้าเว็บอีกครั้ง");
+};
+imgGame.onerror = () => {
+    alert("ไม่สามารถโหลดภาพสำหรับจับผิดได้ กรุณาลองรีโหลดหน้าเว็บอีกครั้ง");
+};
+
 // Dev panel elements
 const devPanel = document.getElementById('dev-panel');
 const coordsLog = document.getElementById('coords-log');
@@ -130,6 +137,10 @@ function updateTimerDisplay() {
 // Click and keypress handler
 function handleGameClick(e) {
     const rect = imgGame.getBoundingClientRect();
+    if (!rect.width || !rect.height) {
+        console.warn("Image dimensions are 0. Image might not be loaded yet.");
+        return;
+    }
     const clickX = e.clientX - rect.left;
     const clickY = e.clientY - rect.top;
     
@@ -168,14 +179,7 @@ function handleGameClick(e) {
         
         if (levelScore >= currentLevel.differences.length) {
             clearInterval(timerInterval);
-            totalTimeRemaining += timeRemaining;
-            setTimeout(() => {
-                if (currentLevelIdx + 1 < levels.length) {
-                    startLevel(currentLevelIdx + 1);
-                } else {
-                    endGame(true);
-                }
-            }, 800);
+            setTimeout(nextLevelOrEnd, 800);
         }
     } else {
         drawMissIndicator(percentX, percentY);
@@ -241,6 +245,16 @@ function endGame(completed) {
     showScreen('end-screen');
 }
 
+function nextLevelOrEnd() {
+    clearInterval(timerInterval);
+    totalTimeRemaining += timeRemaining;
+    if (currentLevelIdx + 1 < levels.length) {
+        startLevel(currentLevelIdx + 1);
+    } else {
+        endGame(true);
+    }
+}
+
 // Dev Mode helpers
 function logDevCoordinate(x, y) {
     const coord = {
@@ -267,14 +281,7 @@ function drawDevCircle(xPercent, yPercent) {
 
 // Event Listeners
 startBtn.addEventListener('click', () => startLevel(0));
-skipBtn.addEventListener('click', () => {
-    clearInterval(timerInterval);
-    if (currentLevelIdx + 1 < levels.length) {
-        startLevel(currentLevelIdx + 1);
-    } else {
-        endGame(true);
-    }
-});
+skipBtn.addEventListener('click', nextLevelOrEnd);
 restartBtn.addEventListener('click', initGame);
 interactiveWrapper.addEventListener('click', handleGameClick);
 
