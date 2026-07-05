@@ -290,7 +290,7 @@ function logDevCoordinate(x, y) {
 
 function drawDevCircle(xPercent, yPercent) {
     const circle = document.createElement('div');
-    circle.className = 'diff-circle';
+    circle.className = 'diff-circle dev-circle';
     circle.style.border = '3px solid #ec4899';
     circle.style.background = 'rgba(236, 72, 153, 0.15)';
     circle.style.boxShadow = '0 0 12px rgba(236, 72, 153, 0.5), inset 0 0 10px rgba(236, 72, 153, 0.5)';
@@ -342,7 +342,7 @@ window.addEventListener('keydown', (e) => {
 clearDevBtn.addEventListener('click', () => {
     devCoords = [];
     coordsLog.value = '';
-    circlesLayer.innerHTML = '';
+    document.querySelectorAll('.dev-circle').forEach(el => el.remove());
 });
 
 // Initialize on page load
