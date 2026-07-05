@@ -2,4 +2,6 @@
 .superpowers/
 node_modules/
 custom_levels.json
+supabase_config.json
+
 
