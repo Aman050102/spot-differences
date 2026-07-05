@@ -623,8 +623,6 @@
         let differences = [];
         let editingId = null;
 
-        const STORAGE_KEY = 'spotDiff_customLevels';
-
         // ==========================================
         // DOM refs
         // ==========================================
@@ -659,13 +657,35 @@
         }
 
         // ==========================================
-        // FILE → BASE64
+        // FILE → COMPRESSED BASE64
         // ==========================================
         function fileToBase64(file) {
             return new Promise(res => {
-                const r = new FileReader();
-                r.onload = e => res(e.target.result);
-                r.readAsDataURL(file);
+                const reader = new FileReader();
+                reader.onload = function (e) {
+                    const img = new Image();
+                    img.onload = function () {
+                        const canvas = document.createElement('canvas');
+                        let width = img.width;
+                        let height = img.height;
+
+                        const MAX_WIDTH = 1000;
+                        if (width > MAX_WIDTH) {
+                            height = Math.round((height * MAX_WIDTH) / width);
+                            width = MAX_WIDTH;
+                        }
+
+                        canvas.width = width;
+                        canvas.height = height;
+                        const ctx = canvas.getContext('2d');
+                        ctx.drawImage(img, 0, 0, width, height);
+
+                        const compressedDataUrl = canvas.toDataURL('image/jpeg', 0.75);
+                        res(compressedDataUrl);
+                    };
+                    img.src = e.target.result;
+                };
+                reader.readAsDataURL(file);
             });
         }
 
@@ -701,9 +721,7 @@
 
         function renderGamePane() {
             paneGame.innerHTML = `<img id="game-img-el" src="${gameBase64}" draggable="false">`;
-            // Re-render any existing markers
             renderMarkers();
-            // Click to add marker
             const img = document.getElementById('game-img-el');
             paneGame.addEventListener('click', handlePaneClick);
         }
@@ -725,14 +743,12 @@
         // MARKER RENDERING
         // ==========================================
         function renderMarkers() {
-            // Remove old markers (keep img)
             paneGame.querySelectorAll('.diff-marker').forEach(m => m.remove());
             const img = document.getElementById('game-img-el');
             if (!img) return;
             differences.forEach((d, i) => {
                 const m = document.createElement('div');
                 m.className = 'diff-marker';
-                // Position relative to img within pane
                 const imgRect = img.getBoundingClientRect();
                 const paneRect = paneGame.getBoundingClientRect();
                 const leftPx = imgRect.left - paneRect.left + (d.x / 100) * imgRect.width;
@@ -745,7 +761,6 @@
                 m.innerHTML = `<span>${i + 1}</span><button class="del-btn" data-i="${i}">×</button>`;
                 paneGame.appendChild(m);
             });
-            // Delete button handlers
             paneGame.querySelectorAll('.del-btn').forEach(btn => {
                 btn.addEventListener('click', e => {
                     e.stopPropagation();
@@ -757,7 +772,6 @@
             });
         }
 
-        // Re-render markers on resize
         window.addEventListener('resize', () => { if (gameBase64) renderMarkers(); });
 
         // ==========================================
@@ -798,7 +812,7 @@
         // ==========================================
         // SAVE LEVEL
         // ==========================================
-        btnSave.addEventListener('click', () => {
+        btnSave.addEventListener('click', async () => {
             const name = levelName.value.trim();
             if (!name) { showToast('กรุณาใส่ชื่อด่านก่อนครับ', 'error'); return; }
             if (!originalBase64) { showToast('กรุณาอัปโหลดภาพต้นฉบับก่อนครับ', 'error'); return; }
@@ -806,7 +820,9 @@
             if (!answerBase64) { showToast('กรุณาอัปโหลดภาพเฉลยก่อนครับ', 'error'); return; }
             if (differences.length === 0) { showToast('กรุณากำหนดจุดต่างอย่างน้อย 1 จุดก่อนครับ', 'error'); return; }
 
-            const levels = loadLevels();
+            const db = await initDB();
+            const levels = await loadLevelsFromDB(db);
+
             if (editingId !== null) {
                 const idx = levels.findIndex(l => l.id === editingId);
                 if (idx !== -1) levels[idx] = buildLevel(editingId, name);
@@ -815,7 +831,8 @@
                 const newId = Date.now();
                 levels.push(buildLevel(newId, name));
             }
-            saveLevels(levels);
+
+            await saveLevelsToDB(db, levels);
             showToast(`✅ บันทึกด่าน "${name}" เสร็จแล้ว!`);
             resetForm();
             renderLevelList();
@@ -862,21 +879,69 @@
         }
 
         // ==========================================
-        // LOCAL STORAGE
+        // INDEXEDDB ENGINE (แก้ปัญหาพื้นที่เต็มถาวร)
         // ==========================================
-        function loadLevels() {
-            try { return JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]'); }
-            catch { return []; }
+        function initDB() {
+            return new Promise((resolve, reject) => {
+                const request = indexedDB.open('SpotDiffDB', 1);
+                request.onupgradeneeded = e => {
+                    const db = e.target.result;
+                    if (!db.objectStoreNames.contains('levelsStore')) {
+                        db.createObjectStore('levelsStore');
+                    }
+                };
+                request.onsuccess = e => resolve(e.target.result);
+                request.onerror = e => reject(e.target.error);
+            });
         }
-        function saveLevels(levels) {
-            localStorage.setItem(STORAGE_KEY, JSON.stringify(levels));
+
+        function loadLevelsFromDB(db) {
+            return new Promise((resolve, reject) => {
+                const transaction = db.transaction(['levelsStore'], 'readonly');
+                const store = transaction.objectStore('levelsStore');
+                const request = store.get(STORAGE_KEY);
+                request.onsuccess = e => {
+                    let data = e.target.result;
+                    // ดึงข้อมูลเก่าจาก localStorage มาใส่ IndexedDB หากมี (Backward Compatibility)
+                    if (!data) {
+                        try {
+                            const legacyData = localStorage.getItem(STORAGE_KEY);
+                            if (legacyData) {
+                                data = JSON.parse(legacyData);
+                                // ย้ายลงคลังใหม่แล้วลบคลังเก่า
+                                saveLevelsToDB(db, data);
+                                localStorage.removeItem(STORAGE_KEY);
+                            }
+                        } catch (err) { }
+                    }
+                    resolve(data || []);
+                };
+                request.onerror = e => reject(e.target.error);
+            });
+        }
+
+        function saveLevelsToDB(db, levels) {
+            return new Promise((resolve, reject) => {
+                const transaction = db.transaction(['levelsStore'], 'readwrite');
+                const store = transaction.objectStore('levelsStore');
+                const request = store.put(levels, STORAGE_KEY);
+                request.onsuccess = () => resolve();
+                request.onerror = e => reject(e.target.error);
+
+                // อัปเดตข้อมูลลง localStorage แบบย่อ (เก็บเฉพาะไอดีและชื่อ) เพื่อให้เมธอดตรวจเช็คหน้าหลักยังรู้ว่ามีด่านอยู่
+                try {
+                    const meta = levels.map(l => ({ id: l.id, isCustom: true }));
+                    localStorage.setItem('spotDiff_indexeddb_meta', JSON.stringify(meta));
+                } catch (e) { }
+            });
         }
 
         // ==========================================
         // LEVEL LIST UI
         // ==========================================
-        function renderLevelList() {
-            const levels = loadLevels();
+        async function renderLevelList() {
+            const db = await initDB();
+            const levels = await loadLevelsFromDB(db);
             if (levels.length === 0) {
                 levelListWrap.innerHTML = '<div class="empty-state" id="empty-msg">ยังไม่มีด่านที่สร้าง — กรอกข้อมูลด้านบนและกดบันทึกครับ</div>';
                 return;
@@ -896,16 +961,19 @@
     `).join('');
         }
 
-        function deleteLevel(id) {
+        async function deleteLevel(id) {
             if (!confirm('ต้องการลบด่านนี้ออกจากเกมใช่ไหมครับ?')) return;
-            const levels = loadLevels().filter(l => l.id !== id);
-            saveLevels(levels);
+            const db = await initDB();
+            const currentLevels = await loadLevelsFromDB(db);
+            const filtered = currentLevels.filter(l => l.id !== id);
+            await saveLevelsToDB(db, filtered);
             renderLevelList();
             showToast('ลบด่านเรียบร้อยแล้วครับ');
         }
 
-        function editLevel(id) {
-            const levels = loadLevels();
+        async function editLevel(id) {
+            const db = await initDB();
+            const levels = await loadLevelsFromDB(db);
             const lv = levels.find(l => l.id === id);
             if (!lv) return;
             editingId = id;
