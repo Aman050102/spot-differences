@@ -1,113 +1,97 @@
-# Specification: Web Game Spot the Difference (จับผิดภาพ)
+# Specification: Web Game Spot the Difference (จับผิดภาพ) - Version 2.0
 
 **Date:** 2026-07-05
-**Status:** Approved by User
+**Status:** Approved by User (Updated with Answer Reveal, Celebration SFX, and iPad Landscape support)
 **Tech Stack:** HTML5, CSS3, Vanilla JavaScript (Single Page Application)
 
 ---
 
 ## 1. Overview & Purpose
-A premium web-based "Spot the Difference" (จับผิดภาพ) game that runs entirely in the browser. Players are presented with two images side-by-side: an original reference image on the left, and a modified image on the right where certain elements have been deleted or altered. The objective is to identify and circle all differences on the right image within a 3-minute time limit per level.
+A premium web-based "Spot the Difference" (จับผิดภาพ) game that runs entirely in the browser. Players are presented with two images side-by-side: an original reference image on the left, and a modified image on the right where certain elements have been deleted or altered. The objective is to identify and click all differences on the right image within a 3-minute time limit per level.
 
-The game will contain 2 levels based on the user's provided images:
-- **Level 1 (Elephant Battle):** 8 differences.
+The game contains 2 levels based on the user's provided images:
+- **Level 1 (Elephant Battle):** 7 differences.
 - **Level 2 (Forest Boats):** 6 differences.
 
 ---
 
 ## 2. Project Architecture & File Structure
-To keep the application fast, lightweight, and easily deployable (e.g., to GitHub Pages), the project is structured as a zero-dependency vanilla web app:
-
 ```text
 spot-differences/
-├── assets/                          # Game images assets folder
+├── assets/                          # Game assets
 │   ├── original_1.png               # Level 1: Original Image
-│   ├── game_1.png                   # Level 1: Image with edits/deletions
-│   ├── answer_1.png                 # Level 1: Reference image showing answers
+│   ├── game_1.png                   # Level 1: Edited Image
+│   ├── answer_1.png                 # Level 1: Answer Key (with blue circles)
 │   ├── original_2.png               # Level 2: Original Image
-│   ├── game_2.png                   # Level 2: Image with edits/deletions
-│   └── answer_2.png                 # Level 2: Reference image showing answers
-├── index.html                       # Core layout and state-container
-├── style.css                        # Premium visual style, themes, and animations
-├── game.js                          # State management, coordinates checking, and timer
-├── .gitignore                       # Git ignore file to exclude DS_Store, etc.
-└── README.md                        # Project instructions
+│   ├── game_2.png                   # Level 2: Edited Image
+│   ├── answer_2.png                 # Level 2: Answer Key (with blue circles)
+│   └── applause.mp3                 # Victory applause sound effect
+├── index.html                       # Core HTML shell (SPA container)
+├── style.css                        # Premium visual style, responsive layout, animations
+├── game.js                          # State management, coordinates checking, confetti canvas
+├── .gitignore                       # Ignored folders (.superpowers, DS_Store, etc.)
+└── README.md                        # Documentation
 ```
 
 ---
 
 ## 3. Game Flow & State Machine
-The application behaves as a Single Page Application (SPA), managing three main display states:
+The game manages four main screen states:
 
 ```mermaid
 stateDiagram-v2
     [*] --> START
     START --> PLAYING : Click "Start Game"
-    PLAYING --> NEXT_LEVEL : Complete Level 1
-    NEXT_LEVEL --> PLAYING : Load Level 2
-    PLAYING --> END : Time Out / Complete Level 2
+    PLAYING --> REVEAL_ANSWER : Find all / Skip / Timeout
+    REVEAL_ANSWER --> PLAYING : Click "Next Level" (if Level 1)
+    REVEAL_ANSWER --> END : Click "View Results" (if Level 2)
     END --> START : Click "Play Again"
 ```
 
-### A. Start Screen (หน้าแรก)
-- **Design:** Dark, premium theme using glassmorphism card styling and smooth gradient animations.
-- **Components:**
-  - Game Title: "SPOT THE DIFFERENCE" (จับผิดภาพประวัติศาสตร์)
-  - Brief instructions: "⏱️ 3 minutes per level | Find all differences | Tap to circle"
-  - Interactive "Start Game" button with a pulse micro-animation.
-  - Preview thumbnails of the levels.
+### A. Start Screen (หน้าแรก) - Premium Upgrade
+- **Design:** Dark radial HSL background with an outer glowing aura on the glass card, featuring a pulsating, gradient-filled game title.
+- **Preview Cards:** Shows two preview tiles side-by-side with thumbnail representations:
+  - Level 1: "ด่านที่ 1: ยุทธหัตถี" (7 จุดต่าง)
+  - Level 2: "ด่านที่ 2: วิถีชีวิตแม่น้ำ" (6 จุดต่าง)
+- **Controls:** A primary "Start Game" button with scale transitions and shadow glow.
 
-### B. Gameplay Screen (หน้าเล่นเกม)
-- **Timer:** A countdown timer starting at **03:00 (180 seconds)**. When it reaches 00:00, the game transitions directly to the End Screen.
-- **Header:** Shows the current level (e.g., "Level 1/2: Elephant Battle") and progress indicators (e.g., "Differences: 0 / 8").
-- **Side-by-Side Images Container:**
-  - Left panel: Displays `original_X.png`. Non-interactive, with a small watermark "Original Image".
-  - Right panel: Displays `game_X.png`. Interactive crosshair cursor when hovering. Clicking on it registers coordinates.
-  - When a correct difference is clicked:
-    - Draw a persistent red outline circle (pulsing briefly) on the right image at the match location.
-    - Increment the count of differences found.
-    - Play success sound or visual check mark flash.
-  - When an incorrect click happens:
-    - Trigger a subtle visual shake animation on the right panel or show a quick red flash to signify a miss. No time penalty.
-- **Level Progression:**
-  - When all differences are found (8 for Level 1, 6 for Level 2), automatically load the next level or transition to the End Screen.
-  - Include a "Skip Level" button for testing purposes.
+### B. Gameplay Screen (หน้าเล่นเกม) - Clean UI
+- **Clean Images Workspace:** No floating text overlays ("ภาพต้นฉบับ" and "จับผิดจุดต่าง") on top of the images.
+- **Clean Footer:** The helper tip text is removed from the bottom footer. Only the level skip button and a subtle credit are present.
+- **Interaction:**
+  - Left panel: Displays `original_X.png`. Non-interactive.
+  - Right panel: Displays `game_X.png`. Hover displays crosshair cursor. Clicking checks click coordinate percentage coordinates against database coordinates.
+  - Correct guess: Spawns glowing red outline circle `.diff-circle`.
+  - Incorrect guess: Spawns scaling, fading red cross `.miss-indicator`, and shakes the workspace container `.shake-effect`.
 
-### C. End Screen (หน้าสรุปผล)
-- **Summary Statistics:**
-  - Total score (e.g., "14 / 14 differences found" or lower if time ran out).
-  - Time remaining bonus.
-  - Rating/Performance badge based on speed and accuracy.
-- **Action:** A "Play Again" button that resets all states (score, levels, timers) and returns the user to the Start Screen.
+### C. Answer Reveal Screen (หน้าจอแสดงเฉลยระหว่างด่าน)
+- **Trigger:** Reached immediately when a level is completed (all points found, skip clicked, or timer runs out).
+- **Interface:**
+  - Header: Shows a success greeting in green: "ด่านที่ X เสร็จสิ้น (เฉลยจุดต่าง)".
+  - Left panel: Displays `original_X.png`.
+  - Right panel: Displays `answer_X.png` (which features the pre-drawn blue answer circles).
+  - All clicked red circle overlays and miss markers are removed from the screen to show the clean answer image.
+  - Footer: Displays a large green primary action button:
+    - Level 1: "ไปด่านถัดไป (Next Level) ➔"
+    - Level 2: "ดูคะแนนสรุป (View Results) ➔"
+- **Celebration Effects:**
+  - Plays the victory applause audio `assets/applause.mp3`.
+  - Spawns a canvas-based falling confetti overlay (`#confetti-canvas`) dropping colorful particles from the top of the screen.
 
----
-
-## 4. Coordinate Calculation & Responsive Design
-To ensure that coordinates map perfectly regardless of screen size (mobile, tablet, desktop, or resizing), the coordinates must be computed as **percentages relative to the image size**, rather than absolute pixels.
-
-### Mathematical Conversion
-When a player clicks on the interactive image container:
-$$x_{\%} = \frac{ClickX - BoundingBoxLeft}{ImageWidth} \times 100$$
-$$y_{\%} = \frac{ClickY - BoundingBoxTop}{ImageHeight} \times 100$$
-
-A click is considered a match if it falls within the radius $r_{\%}$ of a predefined coordinate:
-$$\sqrt{(x_{\%} - targetX_{\%})^2 + (y_{\%} - targetY_{\%})^2} \le targetR_{\%}$$
+### D. End Screen (หน้าสรุปผล)
+- **Statistics:** Shows total score (out of 13) and total remaining accumulated time bonus.
+- **Controls:** A "Play Again" button that resets score, levels, timer variables, and returns to the Start Screen.
 
 ---
 
-## 5. Developer Mode (Calibration Helper Tool) 🛠️
-Because exact coordinate maps for the differences do not yet exist, a developer utility is built into the game.
-
-- **Trigger:** Adding `?dev=true` to the URL query string or pressing the keyboard shortcut key `d` during gameplay.
-- **Behavior:**
-  - Clicking on the interactive image will place a temporary pink indicator circle on the image.
-  - It will log the exact JSON format coordinates (`{"x": xx.x, "y": yy.y, "r": 5.0}`) directly to a hidden overlay developer panel.
-  - The developer can copy these JSON outputs and paste them into `game.js` configuration.
+## 4. Layout Constraints for iPad Landscape & Desktop
+To prevent vertical scrollbars on landscape viewports (e.g. iPad landscape at `1024x768px`):
+- **Image Max Height:** The `.workspace` images container and wrapper are constrained to `max-height: 52vh` or `55vh`.
+- **Fit Containment:** Image elements inside the wrappers use `width: auto; max-width: 100%; height: auto; max-height: 52vh; object-fit: contain;`. This forces side-by-side images to scale down automatically if the viewport height is short.
+- **Compact Paddings:** Margin and paddings for the header and footer scale down on landscape aspect ratios using custom media queries, keeping the entire game board within a single viewport.
 
 ---
 
-## 6. Git Implementation
-The project will be initialized as a git repository immediately inside `/Users/mac/spot-differences/`:
-- Create `.gitignore` to ignore system files (`.DS_Store`, etc.) and visual companion folders (`.superpowers`).
-- Run `git init`.
-- Commit all code elements and assets in logical, clean phases.
+## 5. Confetti System & Web Audio Details
+- **Confetti:** Written as a lightweight particle simulation drawing to a full-screen, pointer-events-disabled `<canvas id="confetti-canvas">` element. Particles feature realistic falling speeds, rotation, gravity, and randomized colors.
+- **Applause Sound:** Audio is loaded dynamically from `assets/applause.mp3` using standard HTML5 Audio, playing when the `REVEAL_ANSWER` state is loaded and pausing when the user transitions away.
