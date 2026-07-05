@@ -786,6 +786,21 @@ body {
     z-index: 999;
 }
 
+/* Reveal Answer Continue Button - highlighted green style */
+.reveal-continue-btn {
+    background: linear-gradient(135deg, hsl(158, 76%, 36%), hsl(158, 76%, 28%)) !important;
+    color: #fff !important;
+    box-shadow: 0 0 20px rgba(16, 185, 129, 0.4), 0 4px 15px rgba(16, 185, 129, 0.3) !important;
+    font-size: 1rem !important;
+    padding: 0.75rem 2rem !important;
+    animation: revealBtnPulse 1.5s ease-in-out infinite;
+}
+
+@keyframes revealBtnPulse {
+    0%, 100% { box-shadow: 0 0 20px rgba(16,185,129,0.4), 0 4px 15px rgba(16,185,129,0.3); }
+    50% { box-shadow: 0 0 30px rgba(16,185,129,0.7), 0 6px 20px rgba(16,185,129,0.5); }
+}
+
 /* ==========================================================================
    Landscape Responsive Layout
    ========================================================================== */

@@ -5,6 +5,7 @@ const levels = [
         title: "ด่านที่ 1: ยุทธหัตถี (ศึกช้างศึก)",
         originalSrc: "assets/original_1.png",
         gameSrc: "assets/game_1.png",
+        answerSrc: "assets/answer_1.png",
         differences: [
             { "x": 59.3, "y": 19.6, "r": 4.5 },
             { "x": 68.0, "y": 23.4, "r": 4.5 },
@@ -20,6 +21,7 @@ const levels = [
         title: "ด่านที่ 2: วิถีชีวิตกลางแม่น้ำป่า",
         originalSrc: "assets/original_2.png",
         gameSrc: "assets/game_2.png",
+        answerSrc: "assets/answer_2.png",
         differences: [
             { "x": 7.3, "y": 92.6, "r": 6.8 },
             { "x": 8.3, "y": 78.2, "r": 6.5 },
@@ -105,11 +107,114 @@ function stopVictoryEffects() {
     stopConfetti();
 }
 
-function startConfetti() {
-    // Will be implemented in Task 4
+// ============================================================
+// CONFETTI PARTICLE ENGINE (Canvas-based celebration effect)
+// ============================================================
+const confettiCanvas = document.getElementById('confetti-canvas');
+const confettiCtx = confettiCanvas ? confettiCanvas.getContext('2d') : null;
+let confettiActive = false;
+let confettiParticles = [];
+let confettiAnimFrame = null;
+const confettiColors = ['#f59e0b', '#10b981', '#3b82f6', '#ec4899', '#8b5cf6', '#ef4444', '#f97316'];
+
+function resizeConfettiCanvas() {
+    if (!confettiCanvas) return;
+    confettiCanvas.width = window.innerWidth;
+    confettiCanvas.height = window.innerHeight;
 }
+window.addEventListener('resize', resizeConfettiCanvas);
+
+class ConfettiParticle {
+    constructor() { this.reset(true); }
+    reset(fromTop = false) {
+        this.x = Math.random() * (confettiCanvas ? confettiCanvas.width : window.innerWidth);
+        this.y = fromTop ? (Math.random() * -confettiCanvas.height - 20) : -20;
+        this.size = Math.random() * 8 + 6;
+        this.color = confettiColors[Math.floor(Math.random() * confettiColors.length)];
+        this.speedX = Math.random() * 2 - 1;
+        this.speedY = Math.random() * 3 + 2;
+        this.rotation = Math.random() * 360;
+        this.rotationSpeed = Math.random() * 4 - 2;
+    }
+    update() {
+        this.y += this.speedY;
+        this.x += this.speedX;
+        this.rotation += this.rotationSpeed;
+        if (this.y > (confettiCanvas ? confettiCanvas.height : window.innerHeight) + 20) {
+            this.reset(false);
+        }
+    }
+    draw() {
+        if (!confettiCtx) return;
+        confettiCtx.save();
+        confettiCtx.translate(this.x, this.y);
+        confettiCtx.rotate(this.rotation * Math.PI / 180);
+        confettiCtx.fillStyle = this.color;
+        confettiCtx.fillRect(-this.size / 2, -this.size / 2, this.size, this.size);
+        confettiCtx.restore();
+    }
+}
+
+function startConfetti() {
+    if (!confettiCanvas || !confettiCtx) return;
+    resizeConfettiCanvas();
+    confettiActive = true;
+    confettiParticles = [];
+    for (let i = 0; i < 100; i++) {
+        confettiParticles.push(new ConfettiParticle());
+    }
+    animateConfetti();
+}
+
 function stopConfetti() {
-    // Will be implemented in Task 4
+    confettiActive = false;
+    if (confettiAnimFrame) {
+        cancelAnimationFrame(confettiAnimFrame);
+        confettiAnimFrame = null;
+    }
+    if (confettiCtx && confettiCanvas) {
+        confettiCtx.clearRect(0, 0, confettiCanvas.width, confettiCanvas.height);
+    }
+}
+
+function animateConfetti() {
+    if (!confettiActive || !confettiCtx) return;
+    confettiCtx.clearRect(0, 0, confettiCanvas.width, confettiCanvas.height);
+    confettiParticles.forEach(p => { p.update(); p.draw(); });
+    confettiAnimFrame = requestAnimationFrame(animateConfetti);
+}
+// ============================================================
+// ANSWER REVEAL STATE
+// ============================================================
+function revealAnswerState(isSkipped = false) {
+    isShowingReveal = true;
+    clearInterval(timerInterval);
+    timerInterval = null;
+
+    // Accumulate time bonus if player wasn't skipped/timed out
+    if (!isSkipped) {
+        totalTimeRemaining += timeRemaining;
+    }
+
+    // Play victory celebration
+    playVictoryEffects();
+
+    // Clear user overlays (red circles, miss markers) to show clean answer
+    circlesLayer.innerHTML = '';
+
+    // Swap right image to the answer key image
+    const currentLevel = levels[currentLevelIdx];
+    imgGame.src = currentLevel.answerSrc;
+    imgGame.onerror = () => { console.warn(`Could not load answer image: ${currentLevel.answerSrc}`); };
+
+    // Update heading to green "completed" text
+    levelTitle.innerHTML = `🎉 ด่านที่ ${currentLevel.id} เสร็จสิ้น (เฉลยจุดต่าง)`;
+    levelTitle.style.color = 'var(--correct-color, #10b981)';
+
+    // Update skip button to "Continue" action
+    const isLastLevel = (currentLevelIdx + 1 >= levels.length);
+    skipBtn.textContent = isLastLevel ? 'ดูผลลัพธ์เกม ➤' : 'ไปด่านถัดไป (Next Level) ➤';
+    skipBtn.classList.add('reveal-continue-btn');
 }
 
 // Reset and show start screen
@@ -124,10 +229,20 @@ function initGame() {
 // Start a specific level
 function startLevel(levelIdx) {
     isTransitioning = false;
+    isShowingReveal = false;
     currentLevelIdx = levelIdx;
     levelScore = 0;
     foundDifferencesList = [];
     timeRemaining = 180;
+
+    // Reset skip button to normal state
+    skipBtn.textContent = 'ข้ามด่านนี้ ➤';
+    skipBtn.classList.remove('reveal-continue-btn');
+    levelTitle.style.color = '';
+
+    // Stop any celebration from previous level
+    stopVictoryEffects();
+
     
     const level = levels[currentLevelIdx];
     levelTitle.textContent = level.title;
@@ -154,10 +269,11 @@ function startLevel(levelIdx) {
 function updateTimer() {
     timeRemaining--;
     updateTimerDisplay();
-    
+
     if (timeRemaining <= 0) {
         clearInterval(timerInterval);
-        endGame(false);
+        timerInterval = null;
+        revealAnswerState(true); // Treat timeout as skipped
     }
 }
 
@@ -178,6 +294,7 @@ function updateTimerDisplay() {
 // Click and keypress handler
 function handleGameClick(e) {
     if (isTransitioning) return;
+    if (isShowingReveal) return; // Don't handle clicks on the answer image
     const rect = imgGame.getBoundingClientRect();
     if (!rect.width || !rect.height) {
         console.warn("Image dimensions are 0. Image might not be loaded yet.");
@@ -220,9 +337,11 @@ function handleGameClick(e) {
         drawPersistentCircle(diff.x, diff.y, diff.r);
         
         if (levelScore >= currentLevel.differences.length) {
-            clearInterval(timerInterval);
             isTransitioning = true;
-            setTimeout(() => nextLevelOrEnd(false), 800);
+            setTimeout(() => {
+                isTransitioning = false;
+                revealAnswerState(false);
+            }, 800);
         }
     } else {
         drawMissIndicator(percentX, percentY);
@@ -290,10 +409,16 @@ function endGame(completed) {
 
 function nextLevelOrEnd(isSkipped = false) {
     isTransitioning = false;
+    isShowingReveal = false;
     clearInterval(timerInterval);
-    if (!isSkipped) {
-        totalTimeRemaining += timeRemaining;
-    }
+    stopVictoryEffects();
+
+    // Reset heading
+    const currentLevel = levels[currentLevelIdx];
+    skipBtn.textContent = 'ข้ามด่านนี้ ➤';
+    skipBtn.classList.remove('reveal-continue-btn');
+    levelTitle.style.color = '';
+
     if (currentLevelIdx + 1 < levels.length) {
         startLevel(currentLevelIdx + 1);
     } else {
@@ -329,7 +454,14 @@ function drawDevCircle(xPercent, yPercent) {
 startBtn.addEventListener('click', () => startLevel(0));
 skipBtn.addEventListener('click', () => {
     if (isTransitioning) return;
-    nextLevelOrEnd(true); // pass true for isSkipped
+
+    if (isShowingReveal) {
+        // Player is continuing from the answer reveal screen
+        nextLevelOrEnd(true);
+    } else {
+        // Player clicked skip during normal gameplay
+        revealAnswerState(true);
+    }
 });
 restartBtn.addEventListener('click', initGame);
 interactiveWrapper.addEventListener('click', handleGameClick);
