@@ -292,9 +292,9 @@ window.addEventListener('keydown', (e) => {
     if (e.key.toLowerCase() === 'd') {
         devMode = !devMode;
         if (devMode) {
-            devPanel.classList.add('visible');
+            devPanel.classList.remove('hidden-panel');
         } else {
-            devPanel.classList.remove('visible');
+            devPanel.classList.add('hidden-panel');
         }
     }
 });
