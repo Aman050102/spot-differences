@@ -1,0 +1,939 @@
+<!DOCTYPE html>
+<html lang="th">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Level Editor - จับผิดภาพ</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&family=Sarabun:wght@300;400;600;700&display=swap"
+        rel="stylesheet">
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        :root {
+            --bg: #0a0f1e;
+            --surface: #111827;
+            --border: rgba(255, 255, 255, 0.07);
+            --accent: #3b82f6;
+            --accent2: #7c3aed;
+            --green: #10b981;
+            --yellow: #f59e0b;
+            --red: #ef4444;
+            --text: #f1f5f9;
+            --muted: #64748b;
+            --font-head: 'Outfit', sans-serif;
+            --font-body: 'Sarabun', sans-serif;
+        }
+
+        body {
+            background: radial-gradient(ellipse at 20% 20%, #1e1b4b 0%, var(--bg) 60%);
+            min-height: 100vh;
+            font-family: var(--font-body);
+            color: var(--text);
+        }
+
+        /* ---- LAYOUT ---- */
+        .editor-wrap {
+            max-width: 1100px;
+            margin: 0 auto;
+            padding: 24px 16px;
+        }
+
+        .header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 28px;
+            gap: 16px;
+        }
+
+        .header h1 {
+            font-family: var(--font-head);
+            font-size: 1.6rem;
+            font-weight: 800;
+            background: linear-gradient(135deg, var(--accent), var(--accent2));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .header a {
+            color: var(--muted);
+            text-decoration: none;
+            font-size: 0.9rem;
+            border: 1px solid var(--border);
+            padding: 6px 14px;
+            border-radius: 8px;
+            transition: color 0.2s, border-color 0.2s;
+        }
+
+        .header a:hover {
+            color: var(--text);
+            border-color: var(--accent);
+        }
+
+        /* ---- CARD ---- */
+        .card {
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            padding: 20px 24px;
+            margin-bottom: 20px;
+        }
+
+        .card-title {
+            font-family: var(--font-head);
+            font-size: 1rem;
+            font-weight: 700;
+            color: var(--accent);
+            margin-bottom: 16px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .step-badge {
+            background: var(--accent);
+            color: #fff;
+            width: 22px;
+            height: 22px;
+            border-radius: 50%;
+            font-size: 0.75rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
+            flex-shrink: 0;
+        }
+
+        /* ---- FORM ---- */
+        label {
+            font-size: 0.85rem;
+            color: var(--muted);
+            display: block;
+            margin-bottom: 6px;
+        }
+
+        input[type="text"] {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid var(--border);
+            color: var(--text);
+            border-radius: 8px;
+            padding: 10px 14px;
+            font-size: 0.95rem;
+            width: 100%;
+            transition: border-color 0.2s;
+            font-family: var(--font-body);
+        }
+
+        input[type="text"]:focus {
+            outline: none;
+            border-color: var(--accent);
+        }
+
+        input[type="range"] {
+            width: 100%;
+            accent-color: var(--accent);
+            cursor: pointer;
+        }
+
+        /* ---- UPLOAD ZONE ---- */
+        .upload-zone {
+            border: 2px dashed rgba(255, 255, 255, 0.12);
+            border-radius: 12px;
+            padding: 28px 16px;
+            text-align: center;
+            cursor: pointer;
+            transition: border-color 0.2s, background 0.2s;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .upload-zone:hover {
+            border-color: var(--accent);
+            background: rgba(59, 130, 246, 0.05);
+        }
+
+        .upload-zone input[type="file"] {
+            position: absolute;
+            inset: 0;
+            opacity: 0;
+            cursor: pointer;
+            width: 100%;
+            height: 100%;
+        }
+
+        .upload-zone .icon {
+            font-size: 2.2rem;
+            margin-bottom: 8px;
+        }
+
+        .upload-zone p {
+            color: var(--muted);
+            font-size: 0.85rem;
+        }
+
+        .upload-zone.has-image {
+            border-color: var(--green);
+            background: rgba(16, 185, 129, 0.04);
+        }
+
+        .upload-zone.has-image p {
+            color: var(--green);
+        }
+
+        /* ---- IMAGE EDITOR AREA ---- */
+        .editor-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+        }
+
+        .editor-grid-3 {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            gap: 16px;
+        }
+
+        @media (max-width: 768px) {
+            .editor-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .editor-grid-3 {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .img-pane {
+            position: relative;
+            background: #050a14;
+            border-radius: 12px;
+            border: 1px solid var(--border);
+            overflow: hidden;
+            min-height: 160px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .img-pane img {
+            display: block;
+            width: 100%;
+            height: auto;
+            user-select: none;
+            -webkit-user-drag: none;
+        }
+
+        .img-pane .placeholder {
+            color: var(--muted);
+            font-size: 0.85rem;
+            text-align: center;
+            padding: 24px;
+        }
+
+        .img-pane-label {
+            font-size: 0.75rem;
+            font-weight: 600;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+            color: var(--muted);
+            margin-bottom: 6px;
+        }
+
+        /* Clickable game image overlay */
+        .img-pane.clickable {
+            cursor: crosshair;
+        }
+
+        .diff-marker {
+            position: absolute;
+            border-radius: 50%;
+            border: 2.5px solid var(--yellow);
+            background: rgba(245, 158, 11, 0.18);
+            box-shadow: 0 0 10px rgba(245, 158, 11, 0.4);
+            transform: translate(-50%, -50%);
+            pointer-events: none;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--yellow);
+            font-size: 0.65rem;
+            font-weight: 700;
+        }
+
+        .diff-marker .del-btn {
+            position: absolute;
+            top: -8px;
+            right: -8px;
+            background: var(--red);
+            border: none;
+            color: #fff;
+            width: 16px;
+            height: 16px;
+            border-radius: 50%;
+            font-size: 0.7rem;
+            cursor: pointer;
+            pointer-events: all;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            line-height: 1;
+        }
+
+        /* ---- DIFF TABLE ---- */
+        .diff-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.82rem;
+        }
+
+        .diff-table th {
+            text-align: left;
+            color: var(--muted);
+            font-weight: 600;
+            padding: 5px 8px;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .diff-table td {
+            padding: 5px 8px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+        }
+
+        .diff-table tr:last-child td {
+            border-bottom: none;
+        }
+
+        .diff-table .del-row {
+            background: none;
+            border: none;
+            color: var(--red);
+            cursor: pointer;
+            font-size: 0.8rem;
+            padding: 2px 6px;
+        }
+
+        /* ---- RADIUS CONTROLS ---- */
+        .radius-row {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-top: 12px;
+        }
+
+        .radius-row label {
+            margin: 0;
+            white-space: nowrap;
+            min-width: 120px;
+        }
+
+        #radius-val {
+            font-weight: 700;
+            color: var(--yellow);
+            min-width: 30px;
+        }
+
+        /* ---- BUTTONS ---- */
+        .btn {
+            font-family: var(--font-head);
+            font-weight: 700;
+            font-size: 0.9rem;
+            border: none;
+            border-radius: 10px;
+            cursor: pointer;
+            padding: 10px 22px;
+            transition: all 0.2s;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, var(--accent), var(--accent2));
+            color: #fff;
+            box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 6px 18px rgba(59, 130, 246, 0.4);
+        }
+
+        .btn-green {
+            background: linear-gradient(135deg, #10b981, #059669);
+            color: #fff;
+            box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
+        }
+
+        .btn-green:hover {
+            transform: translateY(-1px);
+        }
+
+        .btn-danger {
+            background: rgba(239, 68, 68, 0.15);
+            color: var(--red);
+            border: 1px solid rgba(239, 68, 68, 0.3);
+        }
+
+        .btn-danger:hover {
+            background: rgba(239, 68, 68, 0.25);
+        }
+
+        .btn-sm {
+            font-size: 0.78rem;
+            padding: 6px 14px;
+        }
+
+        .btn-row {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            align-items: center;
+            margin-top: 16px;
+        }
+
+        /* ---- LEVEL LIST ---- */
+        .level-item {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            padding: 12px 16px;
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            margin-bottom: 10px;
+        }
+
+        .level-item:last-child {
+            margin-bottom: 0;
+        }
+
+        .level-thumb {
+            width: 60px;
+            height: 42px;
+            border-radius: 6px;
+            object-fit: cover;
+            border: 1px solid var(--border);
+            flex-shrink: 0;
+            background: #111;
+        }
+
+        .level-info {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .level-info strong {
+            display: block;
+            font-size: 0.95rem;
+            margin-bottom: 2px;
+        }
+
+        .level-info span {
+            font-size: 0.78rem;
+            color: var(--muted);
+        }
+
+        .level-actions {
+            display: flex;
+            gap: 8px;
+            flex-shrink: 0;
+        }
+
+        /* ---- TOAST ---- */
+        #toast {
+            position: fixed;
+            bottom: 24px;
+            right: 24px;
+            z-index: 999;
+            background: #1e293b;
+            border: 1px solid var(--border);
+            color: var(--text);
+            padding: 12px 20px;
+            border-radius: 10px;
+            font-size: 0.9rem;
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
+            transform: translateY(80px);
+            opacity: 0;
+            transition: all 0.3s ease;
+        }
+
+        #toast.show {
+            transform: translateY(0);
+            opacity: 1;
+        }
+
+        #toast.success {
+            border-color: var(--green);
+            color: var(--green);
+        }
+
+        #toast.error {
+            border-color: var(--red);
+            color: var(--red);
+        }
+
+        /* ---- MISC ---- */
+        .empty-state {
+            text-align: center;
+            color: var(--muted);
+            padding: 32px 16px;
+            font-size: 0.9rem;
+        }
+
+        .sep {
+            height: 1px;
+            background: var(--border);
+            margin: 16px 0;
+        }
+
+        .info-tag {
+            display: inline-block;
+            background: rgba(59, 130, 246, 0.12);
+            color: var(--accent);
+            font-size: 0.75rem;
+            padding: 2px 8px;
+            border-radius: 20px;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="editor-wrap">
+
+        <div class="header">
+            <h1>🎨 Level Editor — จับผิดภาพ</h1>
+            <a href="index.html">← กลับหน้าเกม</a>
+        </div>
+
+        <!-- STEP 1: Level Info -->
+        <div class="card">
+            <div class="card-title"><span class="step-badge">1</span> ข้อมูลด่านและภาพ</div>
+            <div style="margin-bottom:14px;">
+                <label>ชื่อด่าน</label>
+                <input type="text" id="level-name" placeholder="เช่น ด่านที่ 3: วัดพระแก้ว">
+            </div>
+            <div class="editor-grid-3">
+                <div>
+                    <div class="img-pane-label">📷 ภาพต้นฉบับ</div>
+                    <div class="upload-zone" id="zone-original">
+                        <input type="file" id="file-original" accept="image/*">
+                        <div class="icon">🖼️</div>
+                        <p>คลิกเพื่ออัปโหลดภาพต้นฉบับ</p>
+                    </div>
+                </div>
+                <div>
+                    <div class="img-pane-label">✏️ ภาพที่มีจุดต่าง (ภาพจับผิด)</div>
+                    <div class="upload-zone" id="zone-game">
+                        <input type="file" id="file-game" accept="image/*">
+                        <div class="icon">🎯</div>
+                        <p>คลิกเพื่ออัปโหลดภาพที่มีการเปลี่ยนแปลง</p>
+                    </div>
+                </div>
+                <div>
+                    <div class="img-pane-label">👁️ ภาพเฉลย (พร้อมวงกลม)</div>
+                    <div class="upload-zone" id="zone-answer">
+                        <input type="file" id="file-answer" accept="image/*">
+                        <div class="icon">🔍</div>
+                        <p>คลิกเพื่ออัปโหลดภาพเฉลย</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- STEP 2: Click to mark differences -->
+        <div class="card">
+            <div class="card-title"><span class="step-badge">2</span> คลิกบนภาพขวาเพื่อกำหนดจุดต่าง</div>
+            <p style="font-size:0.85rem;color:var(--muted);margin-bottom:14px;">คลิกตำแหน่งที่ต่างจากต้นฉบับบนภาพด้านขวา
+                วงกลมสีเหลืองจะปรากฏบนทุกจุดที่คุณเลือก</p>
+
+            <div class="editor-grid">
+                <div>
+                    <div class="img-pane-label">ต้นฉบับ</div>
+                    <div class="img-pane" id="pane-original">
+                        <div class="placeholder">อัปโหลดภาพต้นฉบับก่อน</div>
+                    </div>
+                </div>
+                <div>
+                    <div class="img-pane-label">ภาพจับผิด — คลิกเพื่อระบุจุดต่าง</div>
+                    <div class="img-pane clickable" id="pane-game">
+                        <div class="placeholder">อัปโหลดภาพจับผิดก่อน</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="radius-row">
+                <label for="radius-slider">รัศมีวงกลม (ค่าเริ่มต้น): <span id="radius-val">5.0</span>%</label>
+                <input type="range" id="radius-slider" min="2" max="12" step="0.5" value="5">
+            </div>
+
+            <div id="diff-list-wrap" style="margin-top:16px;display:none;">
+                <div class="sep"></div>
+                <div style="font-size:0.85rem;font-weight:600;margin-bottom:8px;">จุดต่างที่กำหนดแล้ว (<span
+                        id="diff-count">0</span> จุด)</div>
+                <table class="diff-table">
+                    <thead>
+                        <tr>
+                            <th>#</th>
+                            <th>X (%)</th>
+                            <th>Y (%)</th>
+                            <th>รัศมี (%)</th>
+                            <th></th>
+                        </tr>
+                    </thead>
+                    <tbody id="diff-tbody"></tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- STEP 3: Save -->
+        <div class="card">
+            <div class="card-title"><span class="step-badge">3</span> บันทึกด่าน</div>
+            <p style="font-size:0.85rem;color:var(--muted);margin-bottom:14px;">ด่านจะถูกเพิ่มเข้าเกมทันที
+                และจะปรากฏต่อจากด่านที่ 2 บนหน้าหลัก</p>
+            <div class="btn-row">
+                <button class="btn btn-green" id="btn-save">💾 บันทึกด่านนี้เข้าเกม</button>
+                <button class="btn btn-danger btn-sm" id="btn-clear-form">🗑 ล้างแบบฟอร์ม</button>
+            </div>
+        </div>
+
+        <!-- LEVEL LIST -->
+        <div class="card">
+            <div class="card-title">📋 ด่านที่สร้างแล้ว</div>
+            <div id="level-list-wrap">
+                <div class="empty-state" id="empty-msg">ยังไม่มีด่านที่สร้าง — กรอกข้อมูลด้านบนและกดบันทึกครับ</div>
+            </div>
+        </div>
+
+    </div>
+
+    <div id="toast"></div>
+
+    <script>
+        // ==========================================
+        // STATE
+        // ==========================================
+        let originalBase64 = null;
+        let gameBase64 = null;
+        let answerBase64 = null;
+        let differences = [];
+        let editingId = null;
+
+        const STORAGE_KEY = 'spotDiff_customLevels';
+
+        // ==========================================
+        // DOM refs
+        // ==========================================
+        const fileOriginal = document.getElementById('file-original');
+        const fileGame = document.getElementById('file-game');
+        const fileAnswer = document.getElementById('file-answer');
+        const zoneOriginal = document.getElementById('zone-original');
+        const zoneGame = document.getElementById('zone-game');
+        const zoneAnswer = document.getElementById('zone-answer');
+        const paneOriginal = document.getElementById('pane-original');
+        const paneGame = document.getElementById('pane-game');
+        const radiusSlider = document.getElementById('radius-slider');
+        const radiusVal = document.getElementById('radius-val');
+        const diffListWrap = document.getElementById('diff-list-wrap');
+        const diffTbody = document.getElementById('diff-tbody');
+        const diffCount = document.getElementById('diff-count');
+        const btnSave = document.getElementById('btn-save');
+        const btnClear = document.getElementById('btn-clear-form');
+        const levelName = document.getElementById('level-name');
+        const levelListWrap = document.getElementById('level-list-wrap');
+        const emptyMsg = document.getElementById('empty-msg');
+
+        // ==========================================
+        // TOAST
+        // ==========================================
+        function showToast(msg, type = 'success') {
+            const t = document.getElementById('toast');
+            t.textContent = msg;
+            t.className = `show ${type}`;
+            clearTimeout(t._to);
+            t._to = setTimeout(() => { t.className = ''; }, 3000);
+        }
+
+        // ==========================================
+        // FILE → BASE64
+        // ==========================================
+        function fileToBase64(file) {
+            return new Promise(res => {
+                const r = new FileReader();
+                r.onload = e => res(e.target.result);
+                r.readAsDataURL(file);
+            });
+        }
+
+        // ==========================================
+        // UPLOAD HANDLERS
+        // ==========================================
+        fileOriginal.addEventListener('change', async () => {
+            const f = fileOriginal.files[0]; if (!f) return;
+            originalBase64 = await fileToBase64(f);
+            zoneOriginal.classList.add('has-image');
+            zoneOriginal.querySelector('p').textContent = '✅ ' + f.name;
+            renderOriginalPane();
+        });
+
+        fileGame.addEventListener('change', async () => {
+            const f = fileGame.files[0]; if (!f) return;
+            gameBase64 = await fileToBase64(f);
+            zoneGame.classList.add('has-image');
+            zoneGame.querySelector('p').textContent = '✅ ' + f.name;
+            renderGamePane();
+        });
+
+        fileAnswer.addEventListener('change', async () => {
+            const f = fileAnswer.files[0]; if (!f) return;
+            answerBase64 = await fileToBase64(f);
+            zoneAnswer.classList.add('has-image');
+            zoneAnswer.querySelector('p').textContent = '✅ ' + f.name;
+        });
+
+        function renderOriginalPane() {
+            paneOriginal.innerHTML = `<img src="${originalBase64}" draggable="false">`;
+        }
+
+        function renderGamePane() {
+            paneGame.innerHTML = `<img id="game-img-el" src="${gameBase64}" draggable="false">`;
+            // Re-render any existing markers
+            renderMarkers();
+            // Click to add marker
+            const img = document.getElementById('game-img-el');
+            paneGame.addEventListener('click', handlePaneClick);
+        }
+
+        function handlePaneClick(e) {
+            if (e.target.closest('.del-btn')) return;
+            const img = document.getElementById('game-img-el');
+            if (!img) return;
+            const rect = img.getBoundingClientRect();
+            const xPct = ((e.clientX - rect.left) / rect.width * 100).toFixed(1);
+            const yPct = ((e.clientY - rect.top) / rect.height * 100).toFixed(1);
+            const r = parseFloat(radiusSlider.value);
+            differences.push({ x: parseFloat(xPct), y: parseFloat(yPct), r });
+            renderMarkers();
+            renderDiffTable();
+        }
+
+        // ==========================================
+        // MARKER RENDERING
+        // ==========================================
+        function renderMarkers() {
+            // Remove old markers (keep img)
+            paneGame.querySelectorAll('.diff-marker').forEach(m => m.remove());
+            const img = document.getElementById('game-img-el');
+            if (!img) return;
+            differences.forEach((d, i) => {
+                const m = document.createElement('div');
+                m.className = 'diff-marker';
+                // Position relative to img within pane
+                const imgRect = img.getBoundingClientRect();
+                const paneRect = paneGame.getBoundingClientRect();
+                const leftPx = imgRect.left - paneRect.left + (d.x / 100) * imgRect.width;
+                const topPx = imgRect.top - paneRect.top + (d.y / 100) * imgRect.height;
+                const sizePx = (d.r / 100) * imgRect.width * 2;
+                m.style.left = `${leftPx}px`;
+                m.style.top = `${topPx}px`;
+                m.style.width = `${sizePx}px`;
+                m.style.height = `${sizePx}px`;
+                m.innerHTML = `<span>${i + 1}</span><button class="del-btn" data-i="${i}">×</button>`;
+                paneGame.appendChild(m);
+            });
+            // Delete button handlers
+            paneGame.querySelectorAll('.del-btn').forEach(btn => {
+                btn.addEventListener('click', e => {
+                    e.stopPropagation();
+                    const idx = parseInt(btn.dataset.i);
+                    differences.splice(idx, 1);
+                    renderMarkers();
+                    renderDiffTable();
+                });
+            });
+        }
+
+        // Re-render markers on resize
+        window.addEventListener('resize', () => { if (gameBase64) renderMarkers(); });
+
+        // ==========================================
+        // DIFF TABLE
+        // ==========================================
+        function renderDiffTable() {
+            diffCount.textContent = differences.length;
+            if (differences.length === 0) {
+                diffListWrap.style.display = 'none';
+                return;
+            }
+            diffListWrap.style.display = 'block';
+            diffTbody.innerHTML = differences.map((d, i) => `
+        <tr>
+            <td>${i + 1}</td>
+            <td>${d.x}%</td>
+            <td>${d.y}%</td>
+            <td>${d.r}%</td>
+            <td><button class="del-row" data-i="${i}">ลบ</button></td>
+        </tr>
+    `).join('');
+            diffTbody.querySelectorAll('.del-row').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    differences.splice(parseInt(btn.dataset.i), 1);
+                    renderMarkers();
+                    renderDiffTable();
+                });
+            });
+        }
+
+        // ==========================================
+        // RADIUS SLIDER
+        // ==========================================
+        radiusSlider.addEventListener('input', () => {
+            radiusVal.textContent = parseFloat(radiusSlider.value).toFixed(1);
+        });
+
+        // ==========================================
+        // SAVE LEVEL
+        // ==========================================
+        btnSave.addEventListener('click', () => {
+            const name = levelName.value.trim();
+            if (!name) { showToast('กรุณาใส่ชื่อด่านก่อนครับ', 'error'); return; }
+            if (!originalBase64) { showToast('กรุณาอัปโหลดภาพต้นฉบับก่อนครับ', 'error'); return; }
+            if (!gameBase64) { showToast('กรุณาอัปโหลดภาพจับผิดก่อนครับ', 'error'); return; }
+            if (!answerBase64) { showToast('กรุณาอัปโหลดภาพเฉลยก่อนครับ', 'error'); return; }
+            if (differences.length === 0) { showToast('กรุณากำหนดจุดต่างอย่างน้อย 1 จุดก่อนครับ', 'error'); return; }
+
+            const levels = loadLevels();
+            if (editingId !== null) {
+                const idx = levels.findIndex(l => l.id === editingId);
+                if (idx !== -1) levels[idx] = buildLevel(editingId, name);
+                editingId = null;
+            } else {
+                const newId = Date.now();
+                levels.push(buildLevel(newId, name));
+            }
+            saveLevels(levels);
+            showToast(`✅ บันทึกด่าน "${name}" เสร็จแล้ว!`);
+            resetForm();
+            renderLevelList();
+        });
+
+        function buildLevel(id, name) {
+            return {
+                id, title: name,
+                originalSrc: originalBase64,
+                gameSrc: gameBase64,
+                answerSrc: answerBase64,
+                differences: differences.map(d => ({ x: d.x, y: d.y, r: d.r })),
+                isCustom: true
+            };
+        }
+
+        // ==========================================
+        // CLEAR FORM
+        // ==========================================
+        btnClear.addEventListener('click', resetForm);
+
+        function resetForm() {
+            levelName.value = '';
+            originalBase64 = null;
+            gameBase64 = null;
+            answerBase64 = null;
+            differences = [];
+            editingId = null;
+            fileOriginal.value = '';
+            fileGame.value = '';
+            fileAnswer.value = '';
+            zoneOriginal.classList.remove('has-image');
+            zoneGame.classList.remove('has-image');
+            zoneAnswer.classList.remove('has-image');
+            zoneOriginal.querySelector('p').textContent = 'คลิกเพื่ออัปโหลดภาพต้นฉบับ';
+            zoneGame.querySelector('p').textContent = 'คลิกเพื่ออัปโหลดภาพที่มีการเปลี่ยนแปลง';
+            zoneAnswer.querySelector('p').textContent = 'คลิกเพื่ออัปโหลดภาพเฉลย';
+            paneOriginal.innerHTML = '<div class="placeholder">อัปโหลดภาพต้นฉบับก่อน</div>';
+            paneGame.innerHTML = '<div class="placeholder">อัปโหลดภาพจับผิดก่อน</div>';
+            diffListWrap.style.display = 'none';
+            diffTbody.innerHTML = '';
+            diffCount.textContent = '0';
+            btnSave.textContent = '💾 บันทึกด่านนี้เข้าเกม';
+        }
+
+        // ==========================================
+        // LOCAL STORAGE
+        // ==========================================
+        function loadLevels() {
+            try { return JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]'); }
+            catch { return []; }
+        }
+        function saveLevels(levels) {
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(levels));
+        }
+
+        // ==========================================
+        // LEVEL LIST UI
+        // ==========================================
+        function renderLevelList() {
+            const levels = loadLevels();
+            if (levels.length === 0) {
+                levelListWrap.innerHTML = '<div class="empty-state" id="empty-msg">ยังไม่มีด่านที่สร้าง — กรอกข้อมูลด้านบนและกดบันทึกครับ</div>';
+                return;
+            }
+            levelListWrap.innerHTML = levels.map((lv, i) => `
+        <div class="level-item">
+            <img class="level-thumb" src="${lv.gameSrc}" alt="">
+            <div class="level-info">
+                <strong>${lv.title}</strong>
+                <span>${lv.differences.length} จุดต่าง &nbsp;•&nbsp; <span class="info-tag">Custom Level</span></span>
+            </div>
+            <div class="level-actions">
+                <button class="btn btn-sm" style="background:rgba(59,130,246,0.12);color:#3b82f6;border:1px solid rgba(59,130,246,0.3)" onclick="editLevel(${lv.id})">แก้ไข</button>
+                <button class="btn btn-danger btn-sm" onclick="deleteLevel(${lv.id})">ลบ</button>
+            </div>
+        </div>
+    `).join('');
+        }
+
+        function deleteLevel(id) {
+            if (!confirm('ต้องการลบด่านนี้ออกจากเกมใช่ไหมครับ?')) return;
+            const levels = loadLevels().filter(l => l.id !== id);
+            saveLevels(levels);
+            renderLevelList();
+            showToast('ลบด่านเรียบร้อยแล้วครับ');
+        }
+
+        function editLevel(id) {
+            const levels = loadLevels();
+            const lv = levels.find(l => l.id === id);
+            if (!lv) return;
+            editingId = id;
+            levelName.value = lv.title;
+            originalBase64 = lv.originalSrc;
+            gameBase64 = lv.gameSrc;
+            answerBase64 = lv.answerSrc;
+            zoneOriginal.classList.add('has-image');
+            zoneOriginal.querySelector('p').textContent = '✅ โหลดภาพจากที่บันทึก';
+            zoneGame.classList.add('has-image');
+            zoneGame.querySelector('p').textContent = '✅ โหลดภาพจากที่บันทึก';
+            if (answerBase64) {
+                zoneAnswer.classList.add('has-image');
+                zoneAnswer.querySelector('p').textContent = '✅ โหลดภาพจากที่บันทึก';
+            }
+            renderOriginalPane();
+            renderGamePane();
+            renderDiffTable();
+            btnSave.textContent = '💾 อัปเดตด่านนี้';
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+            showToast('โหลดข้อมูลด่านแล้ว แก้ไขได้เลยครับ');
+        }
+
+        // ==========================================
+        // INIT
+        // ==========================================
+        renderLevelList();
+    </script>
+</body>
+
+</html>

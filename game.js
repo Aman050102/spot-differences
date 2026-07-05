@@ -33,6 +33,26 @@ const levels = [
     }
 ];
 
+// Merge custom levels created in editor.html
+(function mergeCustomLevels() {
+    try {
+        const raw = localStorage.getItem('spotDiff_customLevels');
+        if (!raw) return;
+        const custom = JSON.parse(raw);
+        custom.forEach((lv, i) => {
+            levels.push({
+                id: lv.id,
+                title: lv.title,
+                originalSrc: lv.originalSrc,
+                gameSrc: lv.gameSrc,
+                answerSrc: lv.answerSrc || lv.gameSrc, // fallback: show game image as answer
+                differences: lv.differences,
+                isCustom: true
+            });
+        });
+    } catch(e) { console.warn('Could not load custom levels:', e); }
+})();
+
 // Game state
 let currentLevelIdx = 0;
 let score = 0;
