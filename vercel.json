@@ -1,0 +1,6 @@
+{
+  "rewrites": [
+    { "source": "/api/levels", "destination": "/api/levels.js" },
+    { "source": "/api/levels/delete", "destination": "/api/delete.js" }
+  ]
+}
