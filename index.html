@@ -3,6 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="เกมจับผิดภาพประวัติศาสตร์สุดท้าทาย ค้นหาจุดต่างของภาพถ่ายและรูปวาดในประวัติศาสตร์ก่อนหมดเวลา">
     <title>จับผิดภาพประวัติศาสตร์ - Spot the Difference</title>
     <link rel="stylesheet" href="style.css">
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -18,9 +19,9 @@
                 <p class="subtitle-text">เกมจับผิดภาพสุดท้าทาย ค้นหาจุดต่างก่อนเวลาจะหมด!</p>
                 
                 <div class="rules-container">
-                    <div class="rule-item">⏱️ มีเวลาด่านละ 3 นาที (180 วินาที)</div>
-                    <div class="rule-item">🎯 ค้นหาจุดที่หายไปจากภาพขวา</div>
-                    <div class="rule-item">❌ คลิกผิดไม่หักเวลา ค่อยๆ ค้นหาได้</div>
+                    <div class="rule-item"><span aria-hidden="true">⏱️</span> มีเวลาด่านละ 3 นาที (180 วินาที)</div>
+                    <div class="rule-item"><span aria-hidden="true">🎯</span> ค้นหาจุดที่หายไปจากภาพขวา</div>
+                    <div class="rule-item"><span aria-hidden="true">❌</span> คลิกผิดไม่หักเวลา ค่อยๆ ค้นหาได้</div>
                 </div>
 
                 <button id="start-btn" class="btn btn-primary">เริ่มเล่นเกม</button>
@@ -35,7 +36,7 @@
                     <div class="score-badge">พบจุดต่าง: <span id="found-count">0</span> / <span id="total-count">8</span></div>
                 </div>
                 <div class="timer-container">
-                    <span class="timer-icon">⏱️</span>
+                    <span class="timer-icon"><span aria-hidden="true">⏱️</span></span>
                     <span id="timer-display">03:00</span>
                 </div>
             </div>
@@ -48,7 +49,7 @@
                 </div>
 
                 <!-- Right Image: Interactive Spotting -->
-                <div class="image-wrapper interactive" id="interactive-wrapper">
+                <div class="image-wrapper interactive" id="interactive-wrapper" tabindex="0" role="button" aria-label="พื้นที่ภาพจับผิดเกม คลิกเพื่อเลือกจุดต่างที่สังเกตพบ">
                     <div class="image-label spotlight">จับผิดจุดต่าง (คลิกที่นี่)</div>
                     <img id="img-game" src="assets/game_1.png" alt="Game Image">
                     <!-- Correct circles will be dynamically injected here -->
@@ -59,7 +60,7 @@
             </div>
 
             <div class="game-footer">
-                <span class="tip-text">💡 คำแนะนำ: มองหาจุดที่ลบเนื้อหาหายไปในรูปขวาแล้วคลิกได้เลย!</span>
+                <span class="tip-text"><span aria-hidden="true">💡</span> คำแนะนำ: มองหาจุดที่ลบเนื้อหาหายไปในรูปขวาแล้วคลิกได้เลย!</span>
                 <button id="skip-btn" class="btn btn-secondary">ข้ามด่าน</button>
             </div>
         </div>
@@ -67,7 +68,7 @@
         <!-- End Screen -->
         <div id="end-screen" class="screen">
             <div class="glass-card text-center">
-                <div class="trophy-icon">🏆</div>
+                <div class="trophy-icon"><span aria-hidden="true">🏆</span></div>
                 <h1 id="end-title" class="status-text">ยินดีด้วย! คุณจบเกมแล้ว</h1>
                 <p class="subtitle-text">สรุปผลคะแนนและสถิติของคุณ</p>
 
