@@ -56,19 +56,26 @@
 
             <div class="workspace">
                 <!-- Left Image: Reference Original -->
-                <div class="image-wrapper">
-                    <img id="img-original" src="assets/original_1.png" alt="Original Image">
+                <div class="image-col">
+                    <span class="image-caption">ต้นฉบับ</span>
+                    <div class="image-wrapper">
+                        <img id="img-original" src="assets/original_1.png" alt="Original Image">
+                    </div>
                 </div>
 
                 <!-- Right Image: Interactive Spotting -->
-                <div class="image-wrapper interactive" id="interactive-wrapper" tabindex="0" role="button" aria-label="พื้นที่ภาพจับผิดเกม คลิกเพื่อเลือกจุดต่างที่สังเกตพบ">
-                    <img id="img-game" src="assets/game_1.png" alt="Game Image">
-                    <!-- Correct circles will be dynamically injected here -->
-                    <div id="circles-layer" class="overlay-layer"></div>
-                    <!-- Incorrect click indicator will be injected here -->
-                    <div id="feedback-layer" class="overlay-layer"></div>
+                <div class="image-col">
+                    <span class="image-caption">&nbsp;</span>
+                    <div class="image-wrapper interactive" id="interactive-wrapper" tabindex="0" role="button" aria-label="พื้นที่ภาพจับผิดเกม คลิกเพื่อเลือกจุดต่างที่สังเกตพบ">
+                        <img id="img-game" src="assets/game_1.png" alt="Game Image">
+                        <!-- Correct circles will be dynamically injected here -->
+                        <div id="circles-layer" class="overlay-layer"></div>
+                        <!-- Incorrect click indicator will be injected here -->
+                        <div id="feedback-layer" class="overlay-layer"></div>
+                    </div>
                 </div>
             </div>
+
 
             <div class="game-footer">
                 <button id="skip-btn" class="btn btn-secondary">ข้ามด่าน</button>
