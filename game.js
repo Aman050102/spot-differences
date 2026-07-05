@@ -38,7 +38,7 @@ let currentLevelIdx = 0;
 let score = 0;
 let levelScore = 0;
 let timerInterval = null;
-let timeRemaining = 180; // 3 minutes per level
+let timeRemaining = 60; // 1 minute per level
 let totalTimeRemaining = 0; // accumulated remaining time
 let foundDifferencesList = [];
 let devMode = false;
@@ -225,7 +225,7 @@ function startLevel(levelIdx) {
     currentLevelIdx = levelIdx;
     levelScore = 0;
     foundDifferencesList = [];
-    timeRemaining = 180;
+    timeRemaining = 60;
 
     // Reset skip button to normal state
     skipBtn.textContent = 'ข้ามด่านนี้ ➤';
