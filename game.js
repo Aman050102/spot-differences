@@ -213,7 +213,7 @@ function drawPersistentCircle(xPercent, yPercent, rPercent) {
     circle.style.left = `${xPercent}%`;
     circle.style.top = `${yPercent}%`;
     circle.style.width = `${rPercent * 2}%`;
-    circle.style.height = `${rPercent * 2}%`;
+    circle.style.height = 'auto';
     circlesLayer.appendChild(circle);
 }
 
@@ -297,7 +297,7 @@ function drawDevCircle(xPercent, yPercent) {
     circle.style.left = `${xPercent}%`;
     circle.style.top = `${yPercent}%`;
     circle.style.width = '9%';
-    circle.style.height = '9%';
+    circle.style.height = 'auto';
     circlesLayer.appendChild(circle);
 }
 
