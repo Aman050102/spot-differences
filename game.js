@@ -42,6 +42,9 @@ let foundDifferencesList = [];
 let devMode = false;
 let devCoords = [];
 let isTransitioning = false;
+let isShowingReveal = false;
+const victorySound = new Audio('assets/applause.mp3');
+victorySound.volume = 0.6;
 
 // DOM Elements
 const startScreen = document.getElementById('start-screen');
@@ -86,6 +89,27 @@ if (urlParams.get('dev') === 'true') {
 function showScreen(screenId) {
     [startScreen, playingScreen, endScreen].forEach(s => s.classList.remove('active'));
     document.getElementById(screenId).classList.add('active');
+}
+
+function playVictoryEffects() {
+    victorySound.currentTime = 0;
+    victorySound.play().catch(err => {
+        console.warn("Audio autoplay blocked by browser policy:", err);
+    });
+    startConfetti();
+}
+
+function stopVictoryEffects() {
+    victorySound.pause();
+    victorySound.currentTime = 0;
+    stopConfetti();
+}
+
+function startConfetti() {
+    // Will be implemented in Task 4
+}
+function stopConfetti() {
+    // Will be implemented in Task 4
 }
 
 // Reset and show start screen
