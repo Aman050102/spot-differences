@@ -801,6 +801,25 @@ body {
     50% { box-shadow: 0 0 30px rgba(16,185,129,0.7), 0 6px 20px rgba(16,185,129,0.5); }
 }
 
+/* Hint Circle - yellow flash on miss click showing unfound difference locations */
+.hint-circle {
+    position: absolute;
+    transform: translate(-50%, -50%);
+    border-radius: 50%;
+    aspect-ratio: 1 / 1;
+    border: 3px dashed #f59e0b;
+    background: rgba(245, 158, 11, 0.18);
+    box-shadow: 0 0 14px rgba(245, 158, 11, 0.5), inset 0 0 8px rgba(245, 158, 11, 0.3);
+    pointer-events: none;
+    z-index: 12;
+    animation: hintPulse 0.6s ease-in-out 2;
+}
+
+@keyframes hintPulse {
+    0%, 100% { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+    50% { opacity: 0.5; transform: translate(-50%, -50%) scale(1.1); }
+}
+
 /* ==========================================================================
    Landscape Responsive Layout
    ========================================================================== */

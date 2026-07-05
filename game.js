@@ -45,8 +45,6 @@ let devMode = false;
 let devCoords = [];
 let isTransitioning = false;
 let isShowingReveal = false;
-const victorySound = new Audio('assets/applause.mp3');
-victorySound.volume = 0.6;
 
 // DOM Elements
 const startScreen = document.getElementById('start-screen');
@@ -94,16 +92,10 @@ function showScreen(screenId) {
 }
 
 function playVictoryEffects() {
-    victorySound.currentTime = 0;
-    victorySound.play().catch(err => {
-        console.warn("Audio autoplay blocked by browser policy:", err);
-    });
     startConfetti();
 }
 
 function stopVictoryEffects() {
-    victorySound.pause();
-    victorySound.currentTime = 0;
     stopConfetti();
 }
 
@@ -346,6 +338,7 @@ function handleGameClick(e) {
     } else {
         drawMissIndicator(percentX, percentY);
         triggerShakeEffect();
+        showHintCircles();
     }
 }
 
@@ -379,6 +372,27 @@ function triggerShakeEffect() {
     setTimeout(() => {
         interactiveWrapper.classList.remove('shake-effect');
     }, 400);
+}
+
+// Briefly flash yellow hint circles on all unfound differences
+function showHintCircles() {
+    const currentLevel = levels[currentLevelIdx];
+    const hints = [];
+    currentLevel.differences.forEach((diff, i) => {
+        if (foundDifferencesList.includes(i)) return; // skip already found
+        const hint = document.createElement('div');
+        hint.className = 'hint-circle';
+        hint.style.left = `${diff.x}%`;
+        hint.style.top = `${diff.y}%`;
+        hint.style.width = `${diff.r * 2}%`;
+        hint.style.height = 'auto';
+        circlesLayer.appendChild(hint);
+        hints.push(hint);
+    });
+    // Remove all hint circles after 1.2 seconds
+    setTimeout(() => {
+        hints.forEach(h => h.remove());
+    }, 1200);
 }
 
 // End Game logic
