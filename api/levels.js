@@ -30,7 +30,7 @@ module.exports = async (req, res) => {
         return res.status(500).json({ error: 'Supabase credentials not configured' });
     }
 
-    supabaseUrl = supabaseUrl.replace(/\/+$/, '');
+    supabaseUrl = supabaseUrl.replace(/\/rest\/v1\/?$/, '').replace(/\/+$/, '');
 
     // GET: Fetch custom levels
     if (req.method === 'GET') {

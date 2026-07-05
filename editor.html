@@ -834,10 +834,14 @@
                 levels.push(buildLevel(newId, name));
             }
 
-            await saveLevelsToDB(db, levels);
-            showToast(`✅ บันทึกด่าน "${name}" เสร็จแล้ว!`);
-            resetForm();
-            renderLevelList();
+            try {
+                await saveLevelsToDB(db, levels);
+                showToast(`✅ บันทึกด่าน "${name}" เสร็จแล้ว!`);
+                resetForm();
+                renderLevelList();
+            } catch (err) {
+                showToast(`❌ เกิดข้อผิดพลาด: ${err.message}`, 'error');
+            }
         });
 
         function buildLevel(id, name) {
@@ -953,11 +957,21 @@
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(levels)
                 })
-                .then(res => res.json())
+                .then(async res => {
+                    if (!res.ok) {
+                        let errMsg = 'Failed to save to server';
+                        try {
+                            const errData = await res.json();
+                            errMsg = errData.error || errMsg;
+                        } catch(e) {}
+                        throw new Error(errMsg);
+                    }
+                    return res.json();
+                })
                 .then(() => saveToLocalDB)
                 .catch(err => {
-                    console.warn('Failed to save to server API, saved locally instead:', err);
-                    return saveToLocalDB;
+                    console.error('Failed to save to server API:', err);
+                    throw err;
                 });
             } else {
                 return saveToLocalDB;

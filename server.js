@@ -18,7 +18,7 @@ if (fs.existsSync(CONFIG_FILE)) {
         const config = JSON.parse(fs.readFileSync(CONFIG_FILE, 'utf8'));
         if (config.SUPABASE_URL && config.SUPABASE_KEY) {
             // Trim slashes from end of URL
-            config.SUPABASE_URL = config.SUPABASE_URL.replace(/\/+$/, '');
+            config.SUPABASE_URL = config.SUPABASE_URL.replace(/\/rest\/v1\/?$/, '').replace(/\/+$/, '');
             supabaseConfig = config;
             console.log('⚡ Supabase Config detected: Levels will sync to the cloud!');
         }
