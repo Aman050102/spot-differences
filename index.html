@@ -44,13 +44,11 @@
             <div class="workspace">
                 <!-- Left Image: Reference Original -->
                 <div class="image-wrapper">
-                    <div class="image-label">ภาพต้นฉบับ</div>
                     <img id="img-original" src="assets/original_1.png" alt="Original Image">
                 </div>
 
                 <!-- Right Image: Interactive Spotting -->
                 <div class="image-wrapper interactive" id="interactive-wrapper" tabindex="0" role="button" aria-label="พื้นที่ภาพจับผิดเกม คลิกเพื่อเลือกจุดต่างที่สังเกตพบ">
-                    <div class="image-label spotlight">จับผิดจุดต่าง (คลิกที่นี่)</div>
                     <img id="img-game" src="assets/game_1.png" alt="Game Image">
                     <!-- Correct circles will be dynamically injected here -->
                     <div id="circles-layer" class="overlay-layer"></div>
@@ -60,7 +58,6 @@
             </div>
 
             <div class="game-footer">
-                <span class="tip-text"><span aria-hidden="true">💡</span> คำแนะนำ: มองหาจุดที่ลบเนื้อหาหายไปในรูปขวาแล้วคลิกได้เลย!</span>
                 <button id="skip-btn" class="btn btn-secondary">ข้ามด่าน</button>
             </div>
         </div>
@@ -96,6 +93,7 @@
         </div>
     </div>
 
+    <canvas id="confetti-canvas" class="confetti-overlay" aria-hidden="true"></canvas>
     <script src="game.js"></script>
 </body>
 </html>
